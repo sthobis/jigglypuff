@@ -1,0 +1,9 @@
+{
+  "name": "jigglypuff",
+  "version": "1.0.0",
+  "description": "Discord music bot for Labdas 3 discord server",
+  "main": "index.js",
+  "author": "Stefanus Thobi Sinaga <s.thobi.sinaga@gmail.com>",
+  "license": "MIT",
+  "private": false
+}
