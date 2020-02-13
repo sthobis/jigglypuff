@@ -151,7 +151,9 @@ client.on("message", async message => {
         .setTitle("Command list").setDescription(`
 **q**, **queue** : Show queue or add any new song into the queue.
 **n**, **next** : Skip current song being played.
+**d**, **delete**: Delete song entry from queue.
 **s**, **stop** : Stop streaming song.
+**c**, **clear** : Clear current queue.
 **dc**, **disconnect** : Kick bot from voice channel.
 **np**, **nowplaying** : Show current song being played.
 **lq** : Set mode to loop current queue.
@@ -318,5 +320,5 @@ function handleDisconnect(message: Message) {
 // RELEASE THE KRAKEN
 (async () => {
   const result = await client.login(process.env.DISCORD_TOKEN);
-  console.log("Login", result);
+  console.log("Logins", result);
 })();
