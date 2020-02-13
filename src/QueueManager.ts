@@ -112,8 +112,12 @@ class QueueManager {
           highWaterMark: 1 << 25
         })
       )
-      .once("end", this._onSongEnded)
-      .once("error", this._onError);
+      .on("end", () => {
+        this._onSongEnded();
+      })
+      .on("error", err => {
+        this._onError(err);
+      });
     this._dispatcher.setVolume(this._volume / 100);
   }
 
