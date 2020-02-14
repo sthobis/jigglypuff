@@ -10,7 +10,7 @@ import QueueManager from "./QueueManager";
 dotenv.config();
 
 const prefix = "!";
-const songPerPage = 2;
+const songPerPage = 10;
 const client = new Discord.Client();
 const ServerQueueMap = new Map<string, QueueManager>();
 
