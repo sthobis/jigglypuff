@@ -3,13 +3,14 @@ import dotenv from "dotenv";
 import unescape from "lodash.unescape";
 // For youtube search, we use cheerio(scraper) based library
 // to prevent being limited by api rate limiter
-import { LoopTypes } from "./types";
+import { LoopTypes, Song } from "./types";
 import { search } from "./youtube";
 import QueueManager from "./QueueManager";
 
 dotenv.config();
 
 const prefix = "!";
+const songPerPage = 2;
 const client = new Discord.Client();
 const ServerQueueMap = new Map<string, QueueManager>();
 
@@ -221,24 +222,7 @@ async function handleQueue(message: Message) {
   // !queue command
   // shows current queue without adding anything
   if (!songQuery) {
-    if (serverQueue.songs.length) {
-      message.channel.send(
-        serverQueue.songs
-          .map((song, index) => {
-            if (index === serverQueue.nowPlayingIndex) {
-              return `    ⬐ current track
-${index}) ${unescape(song.title)}
-    ⬑ current track`;
-            } else {
-              return `${index}) ${unescape(song.title)}`;
-            }
-          })
-          .join("\n"),
-        { code: "" }
-      );
-    } else {
-      message.channel.send("Queue is empty.", { code: "" });
-    }
+    displayQueue(message);
     return;
   }
 
@@ -247,6 +231,62 @@ ${index}) ${unescape(song.title)}
   const searchResult = await search(songQuery);
   const song = { ...searchResult, requestedBy: message.author.id };
   serverQueue.queue(song);
+}
+
+async function displayQueue(message: Message) {
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+
+  const getSongListByPage = (page: number): string => {
+    const startIndex = page * songPerPage;
+    const songs = serverQueue.songs.slice(startIndex, startIndex + songPerPage);
+
+    return (
+      songs
+        .map((song, index) => {
+          const actualIndex = index + startIndex;
+          if (actualIndex === serverQueue.nowPlayingIndex) {
+            return `    ⬐ current track
+${actualIndex}) ${unescape(song.title)}
+    ⬑ current track`;
+          } else {
+            return `${actualIndex}) ${unescape(song.title)}`;
+          }
+        })
+        .join("\n") + `\n\n Total songs on queue: ${serverQueue.songs.length}`
+    );
+  };
+
+  if (!serverQueue.songs.length) {
+    message.channel.send("Queue is empty.", { code: "" });
+  } else {
+    let page = Math.floor(serverQueue.nowPlayingIndex / songPerPage);
+    const lastPage = Math.floor((serverQueue.songs.length - 1) / songPerPage);
+
+    const sentMessage = (await message.channel.send(getSongListByPage(page), {
+      code: ""
+    })) as Message;
+
+    sentMessage.react("⏫").then(() => sentMessage.react("⏬"));
+    const filter = (reaction, user) => {
+      return (
+        ["⏫", "⏬"].includes(reaction.emoji.name) &&
+        user.id === message.author.id
+      );
+    };
+
+    const collector = sentMessage.createReactionCollector(filter, {
+      time: 60000
+    });
+    collector.on("collect", reaction => {
+      if (reaction.emoji.name === "⏫" && page > 0) {
+        page--;
+        sentMessage.edit(getSongListByPage(page), { code: "" });
+      } else if (reaction.emoji.name === "⏬" && page < lastPage) {
+        page++;
+        sentMessage.edit(getSongListByPage(page), { code: "" });
+      }
+    });
+  }
 }
 
 async function handleNext(message: Message) {
