@@ -130,11 +130,25 @@ class QueueManager {
     this._isPlaying = false;
   }
 
+  resume() {
+    if (!this._isPlaying) {
+      this.play();
+    }
+  }
+
   next() {
     if (this._isPlaying) {
       this.stop();
     }
     this._nowPlayingIndex++;
+    this.play();
+  }
+
+  jump(index: number) {
+    if (this._isPlaying) {
+      this.stop();
+    }
+    this._nowPlayingIndex = index;
     this.play();
   }
 

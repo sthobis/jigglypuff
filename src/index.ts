@@ -76,6 +76,15 @@ client.on("message", async message => {
       message.react("👌");
       handleStop(message);
       return;
+    case "r":
+    case "resume":
+      message.react("👌");
+      handleResume(message);
+      return;
+    case "j":
+    case "jump":
+      handleJump(message);
+      return;
     case "c":
     case "clear":
       message.react("👌");
@@ -151,8 +160,10 @@ client.on("message", async message => {
         .setTitle("Command list").setDescription(`
 **q**, **queue** : Show queue or add any new song into the queue.
 **n**, **next** : Skip current song being played.
-**d**, **delete**: Delete song entry from queue.
+**d**, **delete**: Delete song entry {number} from queue.
 **s**, **stop** : Stop streaming song.
+**r**, **resume**: Resume streaming song.
+**j**, **jump**: Jump to song {number} in queue.
 **c**, **clear** : Clear current queue.
 **dc**, **disconnect** : Kick bot from voice channel.
 **np**, **nowplaying** : Show current song being played.
@@ -213,7 +224,15 @@ async function handleQueue(message: Message) {
     if (serverQueue.songs.length) {
       message.channel.send(
         serverQueue.songs
-          .map((song, index) => `${index}. ${unescape(song.title)}`)
+          .map((song, index) => {
+            if (index === serverQueue.nowPlayingIndex) {
+              return `    ⬐ current track
+${index}) ${unescape(song.title)}
+    ⬑ current track`;
+            } else {
+              return `${index}) ${unescape(song.title)}`;
+            }
+          })
           .join("\n"),
         { code: "" }
       );
@@ -288,6 +307,46 @@ async function handleStop(message: Message) {
   serverQueue.stop();
 }
 
+async function handleResume(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  serverQueue.resume();
+}
+
+async function handleJump(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  const jumpIndex = parseInt(getArgs(message.content));
+  console.log("Jump index", jumpIndex);
+  serverQueue.jump(jumpIndex);
+}
+
 async function handleClear(message: Message) {
   const voiceChannel = message.member.voiceChannel;
   if (!voiceChannel)
@@ -320,5 +379,5 @@ function handleDisconnect(message: Message) {
 // RELEASE THE KRAKEN
 (async () => {
   const result = await client.login(process.env.DISCORD_TOKEN);
-  console.log("Logins", result);
+  console.log("Login", result);
 })();
