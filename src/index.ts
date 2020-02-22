@@ -3,8 +3,9 @@ import dotenv from "dotenv";
 import unescape from "lodash.unescape";
 // For youtube search, we use cheerio(scraper) based library
 // to prevent being limited by api rate limiter
-import { LoopTypes, Song } from "./types";
-import { search } from "./youtube";
+import { LoopTypes } from "./types";
+import { searchYoutube } from "./youtube";
+import { getPlaylistTracks } from "./spotify";
 import QueueManager from "./QueueManager";
 
 dotenv.config();
@@ -227,10 +228,21 @@ async function handleQueue(message: Message) {
   }
 
   // !queue <query> command
-  // add new song into queue
-  const searchResult = await search(songQuery);
-  const song = { ...searchResult, requestedBy: message.author.id };
-  serverQueue.queue(song);
+  // add new song(s) into queue
+  if (songQuery.startsWith("https://open.spotify.com/playlist/")) {
+    // spotify playlist
+    try {
+      const songs = await getPlaylistTracks(songQuery, message.author.id);
+      serverQueue.queue(songs);
+    } catch (err) {
+      console.log(err);
+    }
+  } else {
+    // regulary youtube search
+    const searchResult = await searchYoutube(songQuery);
+    const song = { ...searchResult, requestedBy: message.author.id };
+    serverQueue.queue(song);
+  }
 }
 
 async function displayQueue(message: Message) {
@@ -419,5 +431,5 @@ function handleDisconnect(message: Message) {
 // RELEASE THE KRAKEN
 (async () => {
   const result = await client.login(process.env.DISCORD_TOKEN);
-  console.log("Login", result);
+  console.log("Discord login", result);
 })();

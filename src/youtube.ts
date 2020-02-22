@@ -15,13 +15,7 @@ interface VideoResult {
   duration: string;
 }
 
-interface RelatedVideoResult {
-  id: string;
-  title: string;
-  url: string;
-}
-
-export function search(query: string): Promise<VideoResult> {
+export function searchYoutube(query: string): Promise<VideoResult> {
   return new Promise((resolve, reject) => {
     const q = querystring.escape(query).split(/\s+/);
     const uri = YT_SEARCH_URL + q.join("+");
@@ -164,7 +158,7 @@ function parseDuration(timestampText: string) {
 /**
  * Get metadata of a single video
  */
-export function getRelatedVideo(videoId: string): Promise<RelatedVideoResult> {
+export function getRelatedYoutubeVideo(videoId: string): Promise<VideoResult> {
   return new Promise((resolve, reject) => {
     const uri = "https://www.youtube.com/watch?v=" + videoId;
 
@@ -185,7 +179,7 @@ export function getRelatedVideo(videoId: string): Promise<RelatedVideoResult> {
   });
 }
 
-function parseVideoBody(body): RelatedVideoResult {
+function parseVideoBody(body): VideoResult {
   const $ = cheerio.load(body);
 
   const ctx = $("#content");
@@ -200,6 +194,7 @@ function parseVideoBody(body): RelatedVideoResult {
   return {
     id: videoId,
     title: autoplayNode.attr("title"),
+    duration: $(".accessible-description", autoplayNode).html(),
     url: "https://youtube.com" + autoplayNode.attr("href")
   };
 }

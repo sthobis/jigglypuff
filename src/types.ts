@@ -6,6 +6,7 @@ export interface Song {
   title: string;
   id: string;
   url: string;
+  duration: string;
   requestedBy: string;
 }
 

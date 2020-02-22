@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import ytdl from "ytdl-core";
 import { LoopTypes, Song } from "./types";
-import { getRelatedVideo } from "./youtube";
+import { searchYoutube, getRelatedYoutubeVideo } from "./youtube";
 
 class QueueManager {
   textChannel: TextChannel;
@@ -57,9 +57,14 @@ class QueueManager {
     return this._isPlaying;
   }
 
-  queue(song: Song) {
-    this._sendMessage(`${song.title} added to queue`);
-    this._songs.push(song);
+  queue(song: Song | Song[]) {
+    if (Array.isArray(song)) {
+      this._sendMessage(`${song.length} songs added to queue`);
+      this._songs.push(...song);
+    } else {
+      this._sendMessage(`${song.title} added to queue`);
+      this._songs.push(song);
+    }
     if (!this._isPlaying) {
       this.play();
     }
@@ -100,6 +105,20 @@ class QueueManager {
       } else {
         await this._prepareNextSong();
       }
+    }
+
+    if (!this.songs[this._nowPlayingIndex].url) {
+      // this song is loaded from spotify without complete metadata
+      // missing id & url
+      // search this song on youtube first
+      const searchResult = await searchYoutube(
+        this.songs[this._nowPlayingIndex].title
+      );
+      this.songs[this._nowPlayingIndex] = {
+        ...searchResult,
+        requestedBy: this.songs[this._nowPlayingIndex].requestedBy,
+        title: this.songs[this._nowPlayingIndex].title
+      };
     }
 
     this.showNowPlaying();
@@ -170,7 +189,9 @@ class QueueManager {
       .setDescription(
         `[${unescape(this._songs[this._nowPlayingIndex].title)}](${
           this._songs[this._nowPlayingIndex].url
-        })\nadded by <@${this._songs[this._nowPlayingIndex].requestedBy}>`
+        }) - ${this._songs[this._nowPlayingIndex].duration}\nadded by <@${
+          this._songs[this._nowPlayingIndex].requestedBy
+        }>`
       );
     this.textChannel.send(response);
   }
@@ -204,7 +225,7 @@ class QueueManager {
       this._nowPlayingIndex = 0;
     } else if (this.loop === "autoplay") {
       // add new song
-      const relatedSong = await getRelatedVideo(
+      const relatedSong = await getRelatedYoutubeVideo(
         this._songs[this._nowPlayingIndex - 1].id
       );
       const nextSong: Song = {
