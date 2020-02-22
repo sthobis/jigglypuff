@@ -61,7 +61,7 @@ export async function getPlaylistTracks(
       const artists = item.track.artists.map(artist => artist.name).join(" ");
       const title = item.track.name;
       return {
-        title: `${artists} ${title}`,
+        title: `${artists} - ${title}`,
         id: "",
         url: "",
         duration: "",
