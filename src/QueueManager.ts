@@ -3,7 +3,8 @@ import {
   VoiceChannel,
   VoiceConnection,
   StreamDispatcher,
-  RichEmbed
+  RichEmbed,
+  Message
 } from "discord.js";
 import ytdl from "ytdl-core";
 import { LoopTypes, Song } from "./types";
@@ -20,6 +21,7 @@ class QueueManager {
   private _nowPlayingIndex: number;
   private _isPlaying: boolean;
   private _dispatcher: StreamDispatcher;
+  private _lastNowPlayingMessage: Message;
 
   constructor({ botId, loop, volume }) {
     this.textChannel = null;
@@ -32,6 +34,7 @@ class QueueManager {
     this._nowPlayingIndex = 0;
     this._isPlaying = false;
     this._dispatcher = null;
+    this._lastNowPlayingMessage = null;
   }
 
   get volume(): number {
@@ -201,7 +204,7 @@ class QueueManager {
     this.voiceConnection.disconnect();
   }
 
-  showNowPlaying() {
+  async showNowPlaying() {
     const response = new RichEmbed()
       .setColor("#ffffff")
       .setTitle("Now playing")
@@ -212,7 +215,16 @@ class QueueManager {
           this._songs[this._nowPlayingIndex].requestedBy
         }>`
       );
-    this.textChannel.send(response);
+
+    const lastMessageOnChannel = (
+      await this.textChannel.fetchMessages({ limit: 1 })
+    ).first();
+    if (lastMessageOnChannel.id === this._lastNowPlayingMessage?.id) {
+      this._lastNowPlayingMessage.edit(response);
+    } else {
+      const sentMessage = (await this.textChannel.send(response)) as Message;
+      this._lastNowPlayingMessage = sentMessage;
+    }
   }
 
   private _sendMessage(message: string) {
