@@ -87,6 +87,12 @@ client.on("message", async message => {
     case "jump":
       handleJump(message);
       return;
+    case "m":
+    case "mix":
+    case "shuffle":
+      message.react("👌");
+      handleShuffle(message);
+      return;
     case "c":
     case "clear":
       message.react("👌");
@@ -166,6 +172,7 @@ client.on("message", async message => {
 **s**, **stop** : Stop streaming song.
 **r**, **resume**: Resume streaming song.
 **j**, **jump**: Jump to song {number} in queue.
+**m**, **mix**, **shuffle**: Randomize the order of songs in queue.
 **c**, **clear** : Clear current queue.
 **dc**, **disconnect** : Kick bot from voice channel.
 **np**, **nowplaying** : Show current song being played.
@@ -395,7 +402,6 @@ async function handleJump(message: Message) {
   }
 
   const jumpIndex = parseInt(getArgs(message.content));
-  console.log("Jump index", jumpIndex);
   serverQueue.jump(jumpIndex);
 }
 
@@ -416,6 +422,25 @@ async function handleClear(message: Message) {
   }
 
   serverQueue.clear();
+}
+
+async function handleShuffle(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  serverQueue.shuffle();
 }
 
 async function handleNowPlaying(message: Message) {

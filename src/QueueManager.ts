@@ -171,6 +171,25 @@ class QueueManager {
     this.play();
   }
 
+  shuffle() {
+    // https://gist.github.com/guilhermepontes/17ae0cc71fa2b13ea8c20c94c5c35dc4
+    const shuffleArray = arr =>
+      arr
+        .map(a => [Math.random(), a])
+        .sort((a, b) => a[0] - b[0])
+        .map(a => a[1]);
+
+    // if we're currently playing a song, we reset now playing index to 0
+    // move currently playing songs to top of the queue and mix the rest of the songs
+    if (this._isPlaying) {
+      const currentSong = this._songs.splice(this._nowPlayingIndex, 1)[0];
+      this._nowPlayingIndex = 0;
+      this._songs = [currentSong, ...shuffleArray(this._songs)];
+    } else {
+      this._songs = shuffleArray(this._songs);
+    }
+  }
+
   clear() {
     this.stop();
     this._songs = [];
