@@ -10,17 +10,18 @@ import QueueManager from "./QueueManager";
 
 dotenv.config();
 
-const prefix = "!";
 const songPerPage = 10;
 const client = new Discord.Client();
 const ServerQueueMap = new Map<string, QueueManager>();
 
 // in-memory bot settings
 interface BotConfigProps {
+  prefix: string;
   volume: number;
   loop: LoopTypes;
 }
 const BotConfig: BotConfigProps = {
+  prefix: "!",
   volume: 100,
   loop: "autoplay"
 };
@@ -41,7 +42,7 @@ client.on("message", async message => {
   // message sent by the bot itself, ignores it
   if (message.author.bot) return;
   // regular message, not intended to the bot, ignores it
-  if (!message.content.startsWith(prefix)) return;
+  if (!message.content.startsWith(BotConfig.prefix)) return;
   // only usable in regular text channel
   if (message.channel.type !== "text") return;
 
@@ -57,7 +58,7 @@ client.on("message", async message => {
   }
   serverQueue.textChannel = message.channel as TextChannel;
 
-  const command = message.content.split(" ")[0].replace(prefix, "");
+  const command = message.content.split(" ")[0].replace(BotConfig.prefix, "");
   let args;
   switch (command) {
     case "q":
@@ -151,18 +152,31 @@ client.on("message", async message => {
         message.channel.send(`Volume is on ${BotConfig.volume}%`, { code: "" });
       }
       return;
+    case "p":
+    case "prefix":
+      args = getArgs(message.content);
+      if (args) {
+        BotConfig.prefix = args;
+        message.channel.send(`Bot prefix set to ${BotConfig.prefix}`, {
+          code: ""
+        });
+      } else {
+        message.channel.send(`Bot prefix is ${BotConfig.prefix}`, { code: "" });
+      }
+      return;
     case "config":
       message.channel.send(
-        `Mode is \`${
+        `Mode is "${
           BotConfig.loop === "autoplay"
             ? BotConfig.loop
             : `loop ${BotConfig.loop}`
-        }\`\nVolume is on ${BotConfig.volume}%`,
+        }"\nVolume is on ${BotConfig.volume}%\nPrefix is "${BotConfig.prefix}"`,
         { code: "" }
       );
       return;
     case "command":
     case "commands":
+    case "help":
       const response = new RichEmbed()
         .setColor("#ffffff")
         .setTitle("Command list").setDescription(`
