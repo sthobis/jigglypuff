@@ -256,14 +256,14 @@ class QueueManager {
       this._nowPlayingIndex = 0;
     } else if (this.loop === "autoplay") {
       // add new song
-      const relatedSong = await getRelatedYoutubeVideo(
+      const relatedSongs = await getRelatedYoutubeVideo(
         this._songs[this._nowPlayingIndex - 1].id
       );
-      const nextSong: Song = {
-        ...relatedSong,
+      const nextSongs: Song[] = relatedSongs.map(song => ({
+        ...song,
         requestedBy: this.botId
-      };
-      this._songs.push(nextSong);
+      }));
+      this._songs = this._songs.concat(nextSongs);
     } else {
       throw new Error("Undefined loop mode.");
     }

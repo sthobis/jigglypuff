@@ -5,6 +5,7 @@
 import cheerio from "cheerio";
 import request from "request";
 import querystring from "querystring";
+import youtubeApi from "youtube-search";
 
 const YT_SEARCH_URL = "https://www.youtube.com/results?search_query=";
 
@@ -157,8 +158,57 @@ function parseDuration(timestampText: string) {
 
 /**
  * Get metadata of a single video
+ * @param videoId youtube video id
  */
-export function getRelatedYoutubeVideo(videoId: string): Promise<VideoResult> {
+export function getRelatedYoutubeVideo(
+  videoId: string
+): Promise<VideoResult[]> {
+  try {
+    return getRelatedYoutubeVideoByApi(videoId);
+  } catch (err) {
+    // most probaby error.response.status === 403 API QUOTA LIMIT
+    return getRelatedYoutubeVideoByCrawling(videoId);
+  }
+}
+
+/**
+ * Return 5 related videos using youtube search api
+ * @param videoId youtube video id
+ */
+function getRelatedYoutubeVideoByApi(videoId: string): Promise<VideoResult[]> {
+  return new Promise((resolve, reject) => {
+    const opts = {
+      maxResults: 5,
+      key: process.env.GOOGLE_API_KEY,
+      part: "snippet",
+      relatedToVideoId: videoId,
+      type: "video"
+    };
+
+    youtubeApi(videoId, opts, (err, results) => {
+      if (err) {
+        reject(err);
+      }
+
+      resolve(
+        results.map(item => ({
+          id: item.id,
+          title: item.title,
+          url: item.link,
+          duration: "0" // we need to do more request for this, it's not worth the API quota
+        }))
+      );
+    });
+  });
+}
+
+/**
+ * Return 1 related video based on Youtube web page's next video
+ * @param videoId youtube video id
+ */
+function getRelatedYoutubeVideoByCrawling(
+  videoId: string
+): Promise<VideoResult[]> {
   return new Promise((resolve, reject) => {
     const uri = "https://www.youtube.com/watch?v=" + videoId;
 
@@ -171,7 +221,7 @@ export function getRelatedYoutubeVideo(videoId: string): Promise<VideoResult> {
       }
 
       try {
-        resolve(parseVideoBody(body));
+        resolve([parseVideoBody(body)]);
       } catch (err) {
         reject(err);
       }
