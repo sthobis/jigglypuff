@@ -28,6 +28,7 @@ const BotConfig: BotConfigProps = {
 
 client.once("ready", () => {
   console.log("Ready!");
+  setPresence();
 });
 
 client.once("reconnecting", () => {
@@ -157,6 +158,7 @@ client.on("message", async message => {
       args = getArgs(message.content);
       if (args) {
         BotConfig.prefix = args;
+        setPresence();
         message.channel.send(`Bot prefix set to ${BotConfig.prefix}`, {
           code: ""
         });
@@ -207,6 +209,15 @@ client.on("message", async message => {
       );
   }
 });
+
+function setPresence() {
+  client.user.setPresence({
+    game: {
+      name: `${BotConfig.prefix}help`,
+      type: "LISTENING"
+    }
+  });
+}
 
 function getArgs(text: string): string {
   if (text.indexOf(" ") < 0) {
