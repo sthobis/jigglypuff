@@ -38,7 +38,7 @@ export async function requestSpotifyAccessToken(
   return (await result).data.access_token;
 }
 
-export async function getPlaylistTracks(
+export async function getSpotifyPlaylistTracks(
   playlistUrl: string,
   requestBy: string
 ): Promise<Song[]> {
@@ -67,7 +67,7 @@ export async function getPlaylistTracks(
     if (err.statusCode === 401) {
       console.log("Access token expired, refreshing a new one.");
       await refreshAccessToken();
-      return getPlaylistTracks(playlistUrl, requestBy);
+      return getSpotifyPlaylistTracks(playlistUrl, requestBy);
     } else {
       throw err;
     }

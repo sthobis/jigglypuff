@@ -5,7 +5,13 @@ import unescape from "lodash.unescape";
 // to prevent being limited by api rate limiter
 import { LoopTypes } from "./types";
 import { searchYoutube } from "./youtube";
-import { getPlaylistTracks } from "./spotify";
+import { getSpotifyPlaylistTracks } from "./spotify";
+import {
+  getPlaylist,
+  addPlaylist,
+  removePlaylist,
+  loadPlaylist
+} from "./playlist";
 import QueueManager from "./QueueManager";
 
 dotenv.config();
@@ -110,12 +116,16 @@ client.on("message", async message => {
       handleNowPlaying(message);
       return;
     case "sq":
-      // TODO
-      // show available shared playlist - need to persist this somewhere
+      handleGetPlaylist(message);
       return;
     case "sql":
-      // TODO
-      // load saved queue
+      handleLoadPlaylist(message);
+      return;
+    case "sqs":
+      handleSavePlaylist(message);
+      return;
+    case "sqd":
+      handleRemovePlaylist(message);
       return;
     case "lq":
       BotConfig.loop = "queue";
@@ -153,7 +163,6 @@ client.on("message", async message => {
         message.channel.send(`Volume is on ${BotConfig.volume}%`, { code: "" });
       }
       return;
-    case "p":
     case "prefix":
       args = getArgs(message.content);
       if (args) {
@@ -192,11 +201,16 @@ client.on("message", async message => {
 **c**, **clear** : Clear current queue.
 **dc**, **disconnect** : Kick bot from voice channel.
 **np**, **nowplaying** : Show current song being played.
+**sq** : Show saved/available playlist.
+**sql** : Load playlist {number} to current queue.
+**sqs** : Save current queue {name} into a new playlist.
+**sqd** : Delete playlist {number}.
 **lq** : Set mode to loop current queue.
 **ls** : Set mode to loop current song.
 **la** : Set mode to autoplayed based on youtube recommendation.
 **ld** : Disable loop/autoplay mode.
 **v**, **volume** : Set/get current volume.
+**prefix** : Set bot's prefix.
 **config** : Show current bot configuration.
 \nPR for bug fix or new feature welcomed at [github](https://github.com/sthobis/jigglypuff).
 `);
@@ -204,7 +218,7 @@ client.on("message", async message => {
       return;
     default:
       message.channel.send(
-        "You need to enter a valid command! Type !commands fore more info.",
+        "You need to enter a valid command! Type !help fore more info.",
         { code: "" }
       );
   }
@@ -264,7 +278,10 @@ async function handleQueue(message: Message) {
   if (songQuery.startsWith("https://open.spotify.com/playlist/")) {
     // spotify playlist
     try {
-      const songs = await getPlaylistTracks(songQuery, message.author.id);
+      const songs = await getSpotifyPlaylistTracks(
+        songQuery,
+        message.author.id
+      );
       serverQueue.queue(songs);
     } catch (err) {
       console.log(err);
@@ -471,6 +488,139 @@ async function handleShuffle(message: Message) {
 async function handleNowPlaying(message: Message) {
   const serverQueue = ServerQueueMap.get(message.guild.id);
   serverQueue.showNowPlaying();
+}
+
+async function handleGetPlaylist(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  const savedPlaylist = getPlaylist();
+
+  const getPlaylistByPage = (page: number): string => {
+    const startIndex = page * songPerPage;
+    const playlist = savedPlaylist.slice(startIndex, startIndex + songPerPage);
+
+    return playlist
+      .map(item => `${item.id}) ${item.name} by ${item.addedBy}`)
+      .join("\n");
+  };
+
+  if (!savedPlaylist.length) {
+    message.channel.send("No saved playlist. Add one using 'sqs' command.", {
+      code: ""
+    });
+  } else {
+    let page = 0;
+    const lastPage = Math.floor((savedPlaylist.length - 1) / songPerPage);
+
+    const sentMessage = (await message.channel.send(getPlaylistByPage(page), {
+      code: ""
+    })) as Message;
+
+    sentMessage.react("⏫").then(() => sentMessage.react("⏬"));
+    const filter = (reaction, user) => {
+      return (
+        ["⏫", "⏬"].includes(reaction.emoji.name) &&
+        user.id === message.author.id
+      );
+    };
+
+    const collector = sentMessage.createReactionCollector(filter, {
+      time: 60000
+    });
+    collector.on("collect", reaction => {
+      if (reaction.emoji.name === "⏫" && page > 0) {
+        page--;
+        sentMessage.edit(getPlaylistByPage(page), { code: "" });
+      } else if (reaction.emoji.name === "⏬" && page < lastPage) {
+        page++;
+        sentMessage.edit(getPlaylistByPage(page), { code: "" });
+      }
+    });
+  }
+}
+
+async function handleLoadPlaylist(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  const playlistId = parseInt(getArgs(message.content));
+  const playlist = loadPlaylist(playlistId);
+  serverQueue.queue(playlist.queue);
+}
+
+async function handleSavePlaylist(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  const playlistName = getArgs(message.content);
+
+  addPlaylist({
+    addedBy: message.author.username,
+    name: playlistName,
+    queue: serverQueue.songs.slice()
+  });
+
+  message.channel.send(`Playlist ${playlistName} is now saved.`, { code: "" });
+}
+
+async function handleRemovePlaylist(message: Message) {
+  const voiceChannel = message.member.voiceChannel;
+  if (!voiceChannel)
+    return message.channel.send(
+      "You need to be in a voice channel to use this command!",
+      { code: "" }
+    );
+
+  const serverQueue = ServerQueueMap.get(message.guild.id);
+  // if bot is on different voice channel,
+  // join user's voice channel
+  if (voiceChannel !== serverQueue.voiceChannel) {
+    serverQueue.voiceChannel = voiceChannel;
+    serverQueue.voiceConnection = await voiceChannel.join();
+  }
+
+  const playlistId = parseInt(getArgs(message.content));
+
+  removePlaylist(playlistId);
+
+  message.channel.send(`Playlist has been removed.`, { code: "" });
 }
 
 function handleDisconnect(message: Message) {

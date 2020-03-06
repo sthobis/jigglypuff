@@ -18,3 +18,10 @@ export interface ServerSongQueue {
   nowPlayingIndex: number;
   isPlaying: boolean;
 }
+
+export interface Playlist {
+  id?: number;
+  name: string;
+  queue: Song[];
+  addedBy: string;
+}

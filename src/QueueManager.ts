@@ -130,7 +130,7 @@ class QueueManager {
     this._dispatcher = this.voiceConnection
       .playStream(
         await ytdl(this.songs[this._nowPlayingIndex].url, {
-          filter: "audioonly",
+          filter: "audioandvideo",
           highWaterMark: 1 << 25
         })
       )
