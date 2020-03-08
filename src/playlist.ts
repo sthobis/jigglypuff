@@ -11,7 +11,7 @@ const db = low(adapter);
 db._.mixin({
   pushWithId: (array: Playlist[], newItem: Playlist) => {
     const newArray = array.slice();
-    const newId = newArray[newArray.length - 1].id + 1;
+    const newId = newArray.length ? newArray[newArray.length - 1].id + 1 : 0;
     array.push({
       ...newItem,
       id: newId
