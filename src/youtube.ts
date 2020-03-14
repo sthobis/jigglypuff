@@ -186,7 +186,7 @@ function getRelatedYoutubeVideoByApi(videoId: string): Promise<VideoResult[]> {
     };
 
     youtubeApi(videoId, opts, (err, results) => {
-      if (err) {
+      if (err || !results.length) {
         reject(err);
       }
 
