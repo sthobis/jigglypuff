@@ -1,6 +1,7 @@
 import Discord, { Message, TextChannel, RichEmbed } from "discord.js";
 import dotenv from "dotenv";
 import unescape from "lodash.unescape";
+import axios from "axios";
 // For youtube search, we use cheerio(scraper) based library
 // to prevent being limited by api rate limiter
 import { LoopTypes } from "./types";
@@ -184,6 +185,27 @@ client.on("message", async message => {
         }"\nVolume is on ${BotConfig.volume}%\nPrefix is "${BotConfig.prefix}"`,
         { code: "" }
       );
+      return;
+    case "corona":
+      try {
+        const { confirmed, recovered, deaths } = (
+          await axios.get("https://covid19.mathdro.id/api/countries/Indonesia")
+        ).data;
+        const response = new RichEmbed()
+          .setColor("#ffffff")
+          .setTitle("🇮🇩  Corona Tracker").setDescription(`
+Confirmed: ${confirmed.value}
+Recovered: ${recovered.value}
+Deaths: ${deaths.value}
+\n[Data source](https://covid19.mathdro.id/api/countries/Indonesia)
+`);
+        message.channel.send(response);
+      } catch (err) {
+        message.channel.send(
+          `Failed to request data from https://covid19.mathdro.id/api/countries/Indonesia\nTry again later`,
+          { code: "" }
+        );
+      }
       return;
     case "command":
     case "commands":
