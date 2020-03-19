@@ -189,7 +189,7 @@ client.on("message", async message => {
     case "corona":
       try {
         const { confirmed, recovered, deaths } = (
-          await axios.get("https://covid19.mathdro.id/api/countries/Indonesia")
+          await axios.get("https://indonesia-covid-19.mathdro.id/api")
         ).data;
         const response = new RichEmbed()
           .setColor("#ffffff")
@@ -197,12 +197,12 @@ client.on("message", async message => {
 Confirmed: ${confirmed.value}
 Recovered: ${recovered.value}
 Deaths: ${deaths.value}
-\n[Data source](https://covid19.mathdro.id/api/countries/Indonesia)
+\n[Data source](https://indonesia-covid-19.mathdro.id/api)
 `);
         message.channel.send(response);
       } catch (err) {
         message.channel.send(
-          `Failed to request data from https://covid19.mathdro.id/api/countries/Indonesia\nTry again later`,
+          `Failed to request data from https://indonesia-covid-19.mathdro.id/api\nTry again later`,
           { code: "" }
         );
       }
