@@ -188,15 +188,16 @@ client.on("message", async message => {
       return;
     case "corona":
       try {
-        const { confirmed, recovered, deaths } = (
+        const { meninggal, sembuh, perawatan, jumlahKasus } = (
           await axios.get("https://indonesia-covid-19.mathdro.id/api")
         ).data;
         const response = new RichEmbed()
           .setColor("#ffffff")
           .setTitle("🇮🇩  Corona Tracker").setDescription(`
-Confirmed: ${confirmed.value}
-Recovered: ${recovered.value}
-Deaths: ${deaths.value}
+Jumlah kasus: ${jumlahKasus}
+Perawatan: ${perawatan}
+Sembuh: ${sembuh}
+Meninggal: ${meninggal}
 \n[Data source](https://indonesia-covid-19.mathdro.id/api)
 `);
         message.channel.send(response);
