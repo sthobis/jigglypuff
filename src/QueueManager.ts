@@ -6,7 +6,7 @@ import {
   RichEmbed,
   Message
 } from "discord.js";
-import ytdl from "ytdl-core-discord";
+import ytdl from "ytdl-core";
 import { LoopTypes, Song } from "./types";
 import { searchYoutube, getRelatedYoutubeVideo } from "./youtube";
 
@@ -128,7 +128,7 @@ class QueueManager {
 
     this._isPlaying = true;
     this._dispatcher = this.voiceConnection
-      .playOpusStream(
+      .playStream(
         await ytdl(this.songs[this._nowPlayingIndex].url, {
           highWaterMark: 1 << 25
         })
