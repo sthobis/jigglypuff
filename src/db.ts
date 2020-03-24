@@ -27,7 +27,8 @@ db.defaults({
     prefix: "!",
     volume: 50,
     loop: "autoplay"
-  }
+  },
+  errors: []
 }).write();
 
 export function getPlaylist(): Playlist[] {
