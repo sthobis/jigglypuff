@@ -4,15 +4,18 @@ import unescape from "lodash.unescape";
 import axios from "axios";
 // For youtube search, we use cheerio(scraper) based library
 // to prevent being limited by api rate limiter
-import { LoopTypes } from "./types";
 import { searchYoutube } from "./youtube";
 import { getSpotifyPlaylistTracks } from "./spotify";
 import {
   getPlaylist,
   addPlaylist,
   removePlaylist,
-  loadPlaylist
-} from "./playlist";
+  loadPlaylist,
+  getConfig,
+  setPrefix,
+  setVolume,
+  setLoop
+} from "./db";
 import QueueManager from "./QueueManager";
 
 dotenv.config();
@@ -22,16 +25,8 @@ const client = new Discord.Client();
 const ServerQueueMap = new Map<string, QueueManager>();
 
 // in-memory bot settings
-interface BotConfigProps {
-  prefix: string;
-  volume: number;
-  loop: LoopTypes;
-}
-const BotConfig: BotConfigProps = {
-  prefix: "!",
-  volume: 100,
-  loop: "autoplay"
-};
+
+let BotConfig = getConfig();
 
 client.once("ready", () => {
   console.log("Ready!");
@@ -131,16 +126,19 @@ client.on("message", async message => {
     case "lq":
       BotConfig.loop = "queue";
       serverQueue.loop = "queue";
+      setLoop("queue");
       message.channel.send(`Mode set to loop \`queue\``, { code: "" });
       return;
     case "ls":
       BotConfig.loop = "song";
       serverQueue.loop = "song";
+      setLoop("song");
       message.channel.send(`Mode set to loop \`song\``, { code: "" });
       return;
     case "la":
       BotConfig.loop = "autoplay";
       serverQueue.loop = "autoplay";
+      setLoop("autoplay");
       message.channel.send(
         `Mode set to \`autoplay\` (recommended song by youtube)`,
         { code: "" }
@@ -157,6 +155,7 @@ client.on("message", async message => {
       if (args) {
         BotConfig.volume = parseInt(args);
         serverQueue.volume = parseInt(args);
+        setVolume(args);
         message.channel.send(`Volume set to ${BotConfig.volume}%`, {
           code: ""
         });
@@ -168,6 +167,7 @@ client.on("message", async message => {
       args = getArgs(message.content);
       if (args) {
         BotConfig.prefix = args;
+        setPrefix(args);
         setPresence();
         message.channel.send(`Bot prefix set to ${BotConfig.prefix}`, {
           code: ""
@@ -591,8 +591,15 @@ async function handleLoadPlaylist(message: Message) {
     serverQueue.voiceConnection = await voiceChannel.join();
   }
 
-  const playlistId = parseInt(getArgs(message.content));
+  const args = getArgs(message.content);
+  const playlistId = parseInt(args);
   const playlist = loadPlaylist(playlistId);
+  if (!playlist) {
+    return message.channel.send(
+      `Playlist '${args}' not found, try it again by inserting a correct playlist index!`,
+      { code: "" }
+    );
+  }
   serverQueue.queue(playlist.queue);
 }
 

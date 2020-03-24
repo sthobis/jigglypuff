@@ -6,6 +6,8 @@ import cheerio from "cheerio";
 import request from "request";
 import querystring from "querystring";
 import youtubeApi from "youtube-search";
+import { logError } from "./db";
+import fs from "fs";
 
 const YT_SEARCH_URL = "https://www.youtube.com/results?search_query=";
 
@@ -39,7 +41,7 @@ export function searchYoutube(query: string): Promise<VideoResult> {
 }
 
 // parse the plain text response body with cheerio to pin point video information
-function parseSearchBody(body): VideoResult {
+async function parseSearchBody(body): Promise<VideoResult> {
   const $ = cheerio.load(body);
 
   const sections = $(".yt-lockup");
@@ -72,7 +74,7 @@ function parseSearchBody(body): VideoResult {
     if (videoId) {
       // video result
       // ex: https://youtube.com/watch?v=e9vrfEoc8_g
-      return parseVideoResult($, section);
+      return await parseVideoResult($, section, body);
     }
   }
 }
@@ -82,27 +84,49 @@ function parseSearchBody(body): VideoResult {
  *
  * @param {object} section - cheerio object
  */
-function parseVideoResult(
+async function parseVideoResult(
   $: CheerioStatic,
-  section: CheerioElement
-): VideoResult {
+  section: CheerioElement,
+  body: any
+): Promise<VideoResult> {
   const content = $(".yt-lockup-content", section);
-  const title = $(".yt-lockup-title", content);
+  const titleNode = $(".yt-lockup-title", content);
 
-  const a = $("a", title);
-  const span = $("span", title);
+  const a = $("a", titleNode);
+  const span = $("span", titleNode);
   const duration = parseDuration(span.text());
 
   const href = a.attr("href") || "";
 
   const qs = querystring.parse(href.split("?", 2)[1]);
 
-  const videoId = qs.v;
+  let videoId = qs.v;
+  if (Array.isArray(videoId)) {
+    videoId = videoId.join("");
+  }
+  const title = a.text().trim();
+  const url = "https://youtube.com/watch?v=" + videoId;
+
+  if (!title || !url) {
+    const timestamp = new Date().getTime();
+    const errorMessage = `parseVideoResult ${videoId}-${timestamp} title "${title}" url "${url}"`;
+    logError(errorMessage);
+    console.error(errorMessage);
+    fs.writeFile(`${videoId}-${timestamp}.txt`, body, err => {
+      if (err) {
+        logError(err.message);
+      }
+    });
+    const index = retry.indexOf(videoId);
+    if (index < 0) {
+      return await searchYoutube(videoId);
+    }
+  }
 
   const result = {
-    title: a.text().trim(),
-    url: "https://youtube.com/watch?v=" + videoId,
-    id: videoId as string,
+    title,
+    url,
+    id: videoId,
     duration: duration.timestamp
   };
 
@@ -195,7 +219,7 @@ function getRelatedYoutubeVideoByApi(videoId: string): Promise<VideoResult[]> {
           id: item.id,
           title: item.title,
           url: item.link,
-          duration: "0" // we need to do more request for this, it's not worth the API quota
+          duration: "" // we need to do more request for this, it's not worth the API quota
         }))
       );
     });
@@ -212,7 +236,7 @@ function getRelatedYoutubeVideoByCrawling(
   return new Promise((resolve, reject) => {
     const uri = "https://www.youtube.com/watch?v=" + videoId;
 
-    request(uri, function(err, res, body) {
+    request(uri, async function(err, res, body) {
       if (err) {
         reject(err);
       }
@@ -221,7 +245,7 @@ function getRelatedYoutubeVideoByCrawling(
       }
 
       try {
-        resolve([parseVideoBody(body)]);
+        resolve([await parseVideoBody(body)]);
       } catch (err) {
         reject(err);
       }
@@ -229,7 +253,8 @@ function getRelatedYoutubeVideoByCrawling(
   });
 }
 
-function parseVideoBody(body): VideoResult {
+let retry: string[] = [];
+async function parseVideoBody(body): Promise<VideoResult> {
   const $ = cheerio.load(body);
 
   const ctx = $("#content");
@@ -241,10 +266,29 @@ function parseVideoBody(body): VideoResult {
 
   const autoplayNode = $(".autoplay-bar .content-wrapper a");
 
+  const title = autoplayNode.attr("title");
+  const url = "https://youtube.com" + autoplayNode.attr("href");
+
+  if (!title || !url) {
+    const timestamp = new Date().getTime();
+    const errorMessage = `parseVideoBody ${videoId}-${timestamp} title "${title}" url "${url}"`;
+    logError(errorMessage);
+    console.error(errorMessage);
+    fs.writeFile(`${videoId}-${timestamp}.txt`, body, err => {
+      if (err) {
+        logError(err.message);
+      }
+    });
+    const index = retry.indexOf(videoId);
+    if (index < 0) {
+      return await searchYoutube(videoId);
+    }
+  }
+
   return {
     id: videoId,
-    title: autoplayNode.attr("title"),
+    title,
     duration: $(".accessible-description", autoplayNode).html(),
-    url: "https://youtube.com" + autoplayNode.attr("href")
+    url
   };
 }

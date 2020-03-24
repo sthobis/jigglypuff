@@ -6,7 +6,7 @@ import {
   RichEmbed,
   Message
 } from "discord.js";
-import ytdl from "ytdl-core";
+import ytdl from "ytdl-core-discord";
 import { LoopTypes, Song } from "./types";
 import { searchYoutube, getRelatedYoutubeVideo } from "./youtube";
 
@@ -128,9 +128,8 @@ class QueueManager {
 
     this._isPlaying = true;
     this._dispatcher = this.voiceConnection
-      .playStream(
+      .playOpusStream(
         await ytdl(this.songs[this._nowPlayingIndex].url, {
-          filter: "audioandvideo",
           highWaterMark: 1 << 25
         })
       )
@@ -205,15 +204,16 @@ class QueueManager {
   }
 
   async showNowPlaying() {
+    const { title, url, duration, requestedBy } = this._songs[
+      this._nowPlayingIndex
+    ];
     const response = new RichEmbed()
       .setColor("#ffffff")
       .setTitle("Now playing")
       .setDescription(
-        `[${unescape(this._songs[this._nowPlayingIndex].title)}](${
-          this._songs[this._nowPlayingIndex].url
-        }) - ${this._songs[this._nowPlayingIndex].duration}\nadded by <@${
-          this._songs[this._nowPlayingIndex].requestedBy
-        }>`
+        `[${unescape(title)}](${url})${
+          duration ? ` - ${duration}` : ""
+        }\nadded by <@${requestedBy}>`
       );
 
     const lastMessageOnChannel = (

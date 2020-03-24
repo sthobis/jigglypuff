@@ -1,9 +1,11 @@
 import low from "lowdb";
 import FileSync from "lowdb/adapters/FileSync";
-import { Playlist } from "./types";
+import { Playlist, BotConfigProps, ValueOf } from "./types";
 
 interface DB {
   playlists: Playlist[];
+  config: BotConfigProps;
+  errors: string[];
 }
 
 const adapter = new FileSync<DB>("./db/db.json");
@@ -19,7 +21,14 @@ db._.mixin({
     return newArray;
   }
 });
-db.defaults({ playlists: [] }).write();
+db.defaults({
+  playlists: [],
+  config: {
+    prefix: "!",
+    volume: 50,
+    loop: "autoplay"
+  }
+}).write();
 
 export function getPlaylist(): Playlist[] {
   return db
@@ -46,4 +55,30 @@ export function loadPlaylist(playlistId: number): Playlist {
     .get("playlists")
     .find({ id: playlistId })
     .value();
+}
+
+export function getConfig(): BotConfigProps {
+  return db.get("config").value();
+}
+
+export function setPrefix(prefix: BotConfigProps["prefix"]) {
+  setConfig("config.prefix", prefix);
+}
+
+export function setVolume(volume: BotConfigProps["volume"]) {
+  setConfig("config.volume", volume);
+}
+
+export function setLoop(loop: BotConfigProps["loop"]) {
+  setConfig("config.loop", loop);
+}
+
+function setConfig(key: string, value: ValueOf<BotConfigProps>) {
+  db.set(key, value).write();
+}
+
+export function logError(message: string) {
+  db.get("errors")
+    .push(message)
+    .write();
 }
