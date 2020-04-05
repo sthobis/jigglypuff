@@ -66,7 +66,12 @@ client.on("message", async message => {
   switch (command) {
     case "q":
     case "queue":
-      handleQueue(message);
+      handleQueue(message, {
+        next: false
+      });
+      return;
+    case "qn":
+      handleQueue(message, { next: true });
       return;
     case "n":
     case "next":
@@ -215,6 +220,7 @@ Meninggal: ${meninggal}
         .setColor("#ffffff")
         .setTitle("Command list").setDescription(`
 **q**, **queue** : Show queue or add any new song into the queue.
+**qn**: Add new song next to current song being played.
 **n**, **next** : Skip current song being played.
 **d**, **delete**: Delete song entry {number} from queue.
 **s**, **stop** : Stop streaming song.
@@ -263,7 +269,12 @@ function getArgs(text: string): string {
   return text.substring(text.indexOf(" ") + 1, text.length);
 }
 
-async function handleQueue(message: Message) {
+async function handleQueue(
+  message: Message,
+  opts: {
+    next?: boolean;
+  } = {}
+) {
   const voiceChannel = message.member.voiceChannel;
   if (!voiceChannel)
     return message.channel.send(
@@ -298,6 +309,7 @@ async function handleQueue(message: Message) {
 
   // !queue <query> command
   // add new song(s) into queue
+  const index = opts.next ? serverQueue.nowPlayingIndex + 1 : undefined;
   if (songQuery.startsWith("https://open.spotify.com/playlist/")) {
     // spotify playlist
     try {
@@ -305,7 +317,7 @@ async function handleQueue(message: Message) {
         songQuery,
         message.author.id
       );
-      serverQueue.queue(songs);
+      serverQueue.queue(songs, index);
     } catch (err) {
       console.log(err);
     }
@@ -313,7 +325,7 @@ async function handleQueue(message: Message) {
     // regulary youtube search
     const searchResult = await searchYoutube(songQuery);
     const song = { ...searchResult, requestedBy: message.author.id };
-    serverQueue.queue(song);
+    serverQueue.queue(song, index);
   }
 }
 

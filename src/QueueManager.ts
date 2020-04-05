@@ -60,13 +60,22 @@ class QueueManager {
     return this._isPlaying;
   }
 
-  queue(song: Song | Song[]) {
+  queue(song: Song | Song[], index?: number) {
     if (Array.isArray(song)) {
+      if (index) {
+        this._songs.splice(index, 0, ...song);
+      } else {
+        this._songs.push(...song);
+      }
       this._sendMessage(`${song.length} songs added to queue`);
-      this._songs.push(...song);
     } else {
-      this._sendMessage(`${song.title} added to queue`);
-      this._songs.push(song);
+      if (index) {
+        this._songs.splice(index, 0, song);
+      } else {
+        this._songs.push(song);
+      }
+      const songIndex = index || this._songs.length - 1;
+      this._sendMessage(`${songIndex}) ${song.title} added to queue`);
     }
     if (!this._isPlaying) {
       this.play();
