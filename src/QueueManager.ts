@@ -196,11 +196,16 @@ class QueueManager {
     this.stop();
     this._songs = [];
     this._nowPlayingIndex = 0;
+
+    this.textChannel = null;
+    this.voiceChannel = null;
+    this.voiceConnection = null;
+    this._lastNowPlayingMessage = null;
   }
 
   disconnect() {
-    this.clear();
     this.voiceConnection.disconnect();
+    this.clear();
   }
 
   async showNowPlaying() {
