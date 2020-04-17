@@ -2,6 +2,7 @@ import Discord, { Message, TextChannel, RichEmbed } from "discord.js";
 import dotenv from "dotenv";
 import unescape from "lodash.unescape";
 import axios from "axios";
+import pm2 from "pm2";
 // For youtube search, we use cheerio(scraper) based library
 // to prevent being limited by api rate limiter
 import { searchYoutube } from "./youtube";
@@ -14,7 +15,8 @@ import {
   getConfig,
   setPrefix,
   setVolume,
-  setLoop
+  setLoop,
+  logError,
 } from "./db";
 import QueueManager from "./QueueManager";
 
@@ -41,7 +43,7 @@ client.once("disconnect", () => {
   console.log("Disconnect!");
 });
 
-client.on("message", async message => {
+client.on("message", async (message) => {
   // message sent by the bot itself, ignores it
   if (message.author.bot) return;
   // regular message, not intended to the bot, ignores it
@@ -54,7 +56,7 @@ client.on("message", async message => {
     serverQueue = new QueueManager({
       botId: client.user.id,
       loop: BotConfig.loop,
-      volume: BotConfig.volume
+      volume: BotConfig.volume,
     });
 
     ServerQueueMap.set(message.guild.id, serverQueue);
@@ -67,7 +69,7 @@ client.on("message", async message => {
     case "q":
     case "queue":
       handleQueue(message, {
-        next: false
+        next: false,
       });
       return;
     case "qn":
@@ -162,7 +164,7 @@ client.on("message", async message => {
         serverQueue.volume = parseInt(args);
         setVolume(args);
         message.channel.send(`Volume set to ${BotConfig.volume}%`, {
-          code: ""
+          code: "",
         });
       } else {
         message.channel.send(`Volume is on ${BotConfig.volume}%`, { code: "" });
@@ -175,7 +177,7 @@ client.on("message", async message => {
         setPrefix(args);
         setPresence();
         message.channel.send(`Bot prefix set to ${BotConfig.prefix}`, {
-          code: ""
+          code: "",
         });
       } else {
         message.channel.send(`Bot prefix is ${BotConfig.prefix}`, { code: "" });
@@ -190,6 +192,26 @@ client.on("message", async message => {
         }"\nVolume is on ${BotConfig.volume}%\nPrefix is "${BotConfig.prefix}"`,
         { code: "" }
       );
+      return;
+    case "reboot":
+      pm2.connect((err: Error) => {
+        if (err) {
+          message.channel.send(`Failed to connect to pm2.`, {
+            code: "",
+          });
+          logError(err.message);
+        }
+
+        pm2.restart("jigglypuff", (err: Error) => {
+          if (err) {
+            message.channel.send(`Failed to restart pm2 process.`, {
+              code: "",
+            });
+            logError(err.message);
+          }
+          pm2.disconnect();
+        });
+      });
       return;
     case "corona":
       try {
@@ -241,6 +263,7 @@ Meninggal: ${meninggal}
 **v**, **volume** : Set/get current volume.
 **prefix** : Set bot's prefix.
 **config** : Show current bot configuration.
+**reboot** : Restart bot's process on VM (in case of error).
 \nPR for bug fix or new feature welcomed at [github](https://github.com/sthobis/jigglypuff).
 `);
       message.channel.send(response);
@@ -257,8 +280,8 @@ function setPresence() {
   client.user.setPresence({
     game: {
       name: `${BotConfig.prefix}help`,
-      type: "LISTENING"
-    }
+      type: "LISTENING",
+    },
   });
 }
 
@@ -359,7 +382,7 @@ ${actualIndex}) ${unescape(song.title)}
     const lastPage = Math.floor((serverQueue.songs.length - 1) / songPerPage);
 
     const sentMessage = (await message.channel.send(getSongListByPage(page), {
-      code: ""
+      code: "",
     })) as Message;
 
     sentMessage.react("⏫").then(() => sentMessage.react("⏬"));
@@ -371,9 +394,9 @@ ${actualIndex}) ${unescape(song.title)}
     };
 
     const collector = sentMessage.createReactionCollector(filter, {
-      time: 60000
+      time: 60000,
     });
-    collector.on("collect", reaction => {
+    collector.on("collect", (reaction) => {
       if (reaction.emoji.name === "⏫" && page > 0) {
         page--;
         sentMessage.edit(getSongListByPage(page), { code: "" });
@@ -548,20 +571,20 @@ async function handleGetPlaylist(message: Message) {
     const playlist = savedPlaylist.slice(startIndex, startIndex + songPerPage);
 
     return playlist
-      .map(item => `${item.id}) ${item.name} by ${item.addedBy}`)
+      .map((item) => `${item.id}) ${item.name} by ${item.addedBy}`)
       .join("\n");
   };
 
   if (!savedPlaylist.length) {
     message.channel.send("No saved playlist. Add one using 'sqs' command.", {
-      code: ""
+      code: "",
     });
   } else {
     let page = 0;
     const lastPage = Math.floor((savedPlaylist.length - 1) / songPerPage);
 
     const sentMessage = (await message.channel.send(getPlaylistByPage(page), {
-      code: ""
+      code: "",
     })) as Message;
 
     sentMessage.react("⏫").then(() => sentMessage.react("⏬"));
@@ -573,9 +596,9 @@ async function handleGetPlaylist(message: Message) {
     };
 
     const collector = sentMessage.createReactionCollector(filter, {
-      time: 60000
+      time: 60000,
     });
-    collector.on("collect", reaction => {
+    collector.on("collect", (reaction) => {
       if (reaction.emoji.name === "⏫" && page > 0) {
         page--;
         sentMessage.edit(getPlaylistByPage(page), { code: "" });
@@ -636,7 +659,7 @@ async function handleSavePlaylist(message: Message) {
   addPlaylist({
     addedBy: message.author.username,
     name: playlistName,
-    queue: serverQueue.songs.slice()
+    queue: serverQueue.songs.slice(),
   });
 
   message.channel.send(`Playlist ${playlistName} is now saved.`, { code: "" });
