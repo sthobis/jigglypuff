@@ -4,12 +4,10 @@
 
 import cheerio from "cheerio";
 import request from "request";
-import querystring from "querystring";
 import youtubeApi from "youtube-search";
+import simpleYT from "simpleyt";
 import { logError } from "./db";
 import fs from "fs";
-
-const YT_SEARCH_URL = "https://www.youtube.com/results?search_query=";
 
 interface VideoResult {
   id: string;
@@ -18,165 +16,22 @@ interface VideoResult {
   duration: string;
 }
 
-export function searchYoutube(query: string): Promise<VideoResult> {
-  return new Promise((resolve, reject) => {
-    const q = querystring.escape(query).split(/\s+/);
-    const uri = YT_SEARCH_URL + q.join("+");
-
-    request(uri, function(err, res, body) {
-      if (err) {
-        reject(err);
-      }
-      if (res.statusCode !== 200) {
-        reject(new Error("http status: " + res.statusCode));
-      }
-
-      try {
-        resolve(parseSearchBody(body));
-      } catch (err) {
-        reject(err);
-      }
-    });
+export async function searchYoutube(query: string): Promise<VideoResult> {
+  const videos = await simpleYT(query, {
+    filter: "video",
   });
-}
 
-// parse the plain text response body with cheerio to pin point video information
-async function parseSearchBody(body): Promise<VideoResult> {
-  const $ = cheerio.load(body);
-
-  const sections = $(".yt-lockup");
-
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
-    const content = $(".yt-lockup-content", section);
-    const title = $(".yt-lockup-title", content);
-
-    const a = $("a", title);
-
-    const href = a.attr("href") || "";
-
-    const qs = querystring.parse(href.split("?", 2)[1]);
-
-    // make sure the url is correct ( skip ad urls etc )
-    // ref: https://github.com/talmobi/yt-search/issues/3
-    if (
-      href.indexOf("/watch?") !== 0 &&
-      href.indexOf("/user/") !== 0 &&
-      href.indexOf("/channel/") !== 0
-    )
-      continue;
-
-    const videoId = qs.v;
-
-    /* Standard watch?v={videoId} url's without &list=
-     * query string variables
-     */
-    if (videoId) {
-      // video result
-      // ex: https://youtube.com/watch?v=e9vrfEoc8_g
-      return await parseVideoResult($, section, body);
-    }
-  }
-}
-
-/**
- * Parse result section of html containing a video result.
- *
- * @param {object} section - cheerio object
- */
-async function parseVideoResult(
-  $: CheerioStatic,
-  section: CheerioElement,
-  body: any
-): Promise<VideoResult> {
-  const content = $(".yt-lockup-content", section);
-  const titleNode = $(".yt-lockup-title", content);
-
-  const a = $("a", titleNode);
-  const span = $("span", titleNode);
-  const duration = parseDuration(span.text());
-
-  const href = a.attr("href") || "";
-
-  const qs = querystring.parse(href.split("?", 2)[1]);
-
-  let videoId = qs.v;
-  if (Array.isArray(videoId)) {
-    videoId = videoId.join("");
-  }
-  const title = a.text().trim();
-  const url = "https://youtube.com/watch?v=" + videoId;
-
-  if (!title || !url) {
-    const timestamp = new Date().getTime();
-    const errorMessage = `parseVideoResult ${videoId}-${timestamp} title "${title}" url "${url}"`;
-    logError(errorMessage);
-    console.error(errorMessage);
-    fs.writeFile(`${videoId}-${timestamp}.txt`, body, err => {
-      if (err) {
-        logError(err.message);
-      }
-    });
-    const index = retry.indexOf(videoId);
-    if (index < 0) {
-      return await searchYoutube(videoId);
-    }
+  if (!videos.length) {
+    return null;
   }
 
-  const result = {
-    title,
-    url,
-    id: videoId,
-    duration: duration.timestamp
-  };
-
-  return result;
-}
-
-function parseDuration(timestampText: string) {
-  var a = timestampText.split(/\s+/);
-  var lastword = a[a.length - 1];
-
-  // ex: Duration: 2:27, Kesto: 1.07.54
-  // replace all non :, non digits and non .
-  var timestamp = lastword.replace(/[^:.\d]/g, "");
-
-  if (!timestamp)
-    return {
-      toString: function() {
-        return a[0];
-      },
-      seconds: 0,
-      timestamp: "0"
-    };
-
-  // remove trailing junk that are not digits
-  while (timestamp[timestamp.length - 1].match(/\D/)) {
-    timestamp = timestamp.slice(0, -1);
-  }
-
-  // replaces all dots with nice ':'
-  timestamp = timestamp.replace(/\./g, ":");
-
-  var t = timestamp.split(/[:.]/);
-
-  var seconds = 0;
-  var exp = 0;
-  for (var i = t.length - 1; i >= 0; i--) {
-    if (t[i].length <= 0) continue;
-    var number = t[i].replace(/\D/g, "");
-    // var exp = (t.length - 1) - i;
-    seconds += parseInt(number) * (exp > 0 ? Math.pow(60, exp) : 1);
-    exp++;
-    if (exp > 2) break;
-  }
+  const video = videos[0];
 
   return {
-    toString: function() {
-      return seconds + " seconds (" + timestamp + ")";
-    },
-    seconds: seconds,
-    timestamp: timestamp
+    id: video.identifier,
+    title: video.title,
+    url: video.uri,
+    duration: video.length.sec,
   };
 }
 
@@ -184,111 +39,40 @@ function parseDuration(timestampText: string) {
  * Get metadata of a single video
  * @param videoId youtube video id
  */
-export function getRelatedYoutubeVideo(
+export async function getRelatedYoutubeVideo(
   videoId: string
 ): Promise<VideoResult[]> {
   try {
-    return getRelatedYoutubeVideoByApi(videoId);
-  } catch (err) {
-    // most probaby error.response.status === 403 API QUOTA LIMIT
-    return getRelatedYoutubeVideoByCrawling(videoId);
-  }
-}
-
-/**
- * Return 5 related videos using youtube search api
- * @param videoId youtube video id
- */
-function getRelatedYoutubeVideoByApi(videoId: string): Promise<VideoResult[]> {
-  return new Promise((resolve, reject) => {
     const opts = {
       maxResults: 5,
       key: process.env.GOOGLE_API_KEY,
       part: "snippet",
       relatedToVideoId: videoId,
-      type: "video"
+      type: "video",
     };
 
-    youtubeApi(videoId, opts, (err, results) => {
-      if (err || !results.length) {
-        reject(err);
-      }
-
-      resolve(
-        results.map(item => ({
-          id: item.id,
-          title: item.title,
-          url: item.link,
-          duration: "" // we need to do more request for this, it's not worth the API quota
-        }))
-      );
+    const { results } = await youtubeApi(videoId, opts);
+    return results.map((item) => ({
+      id: item.id,
+      title: item.title,
+      url: item.link,
+      duration: "", // we need to do more request for this, it's not worth the API quota
+    }));
+  } catch (err) {
+    // most probaby error.response.status === 403 API QUOTA LIMIT
+    const videos = await simpleYT(videoId, {
+      filter: "video",
     });
-  });
-}
 
-/**
- * Return 1 related video based on Youtube web page's next video
- * @param videoId youtube video id
- */
-function getRelatedYoutubeVideoByCrawling(
-  videoId: string
-): Promise<VideoResult[]> {
-  return new Promise((resolve, reject) => {
-    const uri = "https://www.youtube.com/watch?v=" + videoId;
-
-    request(uri, async function(err, res, body) {
-      if (err) {
-        reject(err);
-      }
-      if (res.statusCode !== 200) {
-        reject(new Error("http status: " + res.statusCode));
-      }
-
-      try {
-        resolve([await parseVideoBody(body)]);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  });
-}
-
-let retry: string[] = [];
-async function parseVideoBody(body): Promise<VideoResult> {
-  const $ = cheerio.load(body);
-
-  const ctx = $("#content");
-  const videoId = $("meta[itemprop=videoId]", ctx).attr("content");
-
-  if (!videoId) {
-    throw new Error("video unavailable");
-  }
-
-  const autoplayNode = $(".autoplay-bar .content-wrapper a");
-
-  const title = autoplayNode.attr("title");
-  const url = "https://youtube.com" + autoplayNode.attr("href");
-
-  if (!title || !url) {
-    const timestamp = new Date().getTime();
-    const errorMessage = `parseVideoBody ${videoId}-${timestamp} title "${title}" url "${url}"`;
-    logError(errorMessage);
-    console.error(errorMessage);
-    fs.writeFile(`${videoId}-${timestamp}.txt`, body, err => {
-      if (err) {
-        logError(err.message);
-      }
-    });
-    const index = retry.indexOf(videoId);
-    if (index < 0) {
-      return await searchYoutube(videoId);
+    if (!videos.length) {
+      return [];
     }
-  }
 
-  return {
-    id: videoId,
-    title,
-    duration: $(".accessible-description", autoplayNode).html(),
-    url
-  };
+    return videos.slice(1, 6).map((video) => ({
+      id: video.identifier,
+      title: video.title,
+      url: video.uri,
+      duration: video.length.sec,
+    }));
+  }
 }

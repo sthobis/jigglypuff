@@ -345,7 +345,7 @@ async function handleQueue(
       console.log(err);
     }
   } else {
-    // regulary youtube search
+    // regular youtube search
     const searchResult = await searchYoutube(songQuery);
     const song = { ...searchResult, requestedBy: message.author.id };
     serverQueue.queue(song, index);

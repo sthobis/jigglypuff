@@ -16,26 +16,23 @@ db._.mixin({
     const newId = newArray.length ? newArray[newArray.length - 1].id + 1 : 0;
     array.push({
       ...newItem,
-      id: newId
+      id: newId,
     });
     return newArray;
-  }
+  },
 });
 db.defaults({
   playlists: [],
   config: {
     prefix: "!",
     volume: 50,
-    loop: "autoplay"
+    loop: "queue",
   },
-  errors: []
+  errors: [],
 }).write();
 
 export function getPlaylist(): Playlist[] {
-  return db
-    .get("playlists")
-    .sortBy("id")
-    .value();
+  return db.get("playlists").sortBy("id").value();
 }
 
 export function addPlaylist(newPlaylist: Playlist) {
@@ -46,16 +43,11 @@ export function addPlaylist(newPlaylist: Playlist) {
 }
 
 export function removePlaylist(playlistId: number) {
-  db.get("playlists")
-    .remove({ id: playlistId })
-    .write();
+  db.get("playlists").remove({ id: playlistId }).write();
 }
 
 export function loadPlaylist(playlistId: number): Playlist {
-  return db
-    .get("playlists")
-    .find({ id: playlistId })
-    .value();
+  return db.get("playlists").find({ id: playlistId }).value();
 }
 
 export function getConfig(): BotConfigProps {
@@ -79,7 +71,5 @@ function setConfig(key: string, value: ValueOf<BotConfigProps>) {
 }
 
 export function logError(message: string) {
-  db.get("errors")
-    .push(message)
-    .write();
+  db.get("errors").push(message).write();
 }

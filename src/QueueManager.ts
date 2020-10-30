@@ -4,7 +4,7 @@ import {
   VoiceConnection,
   StreamDispatcher,
   RichEmbed,
-  Message
+  Message,
 } from "discord.js";
 import ytdl from "ytdl-core";
 import { LoopTypes, Song } from "./types";
@@ -129,7 +129,7 @@ class QueueManager {
       this.songs[this._nowPlayingIndex] = {
         ...searchResult,
         requestedBy: this.songs[this._nowPlayingIndex].requestedBy,
-        title: this.songs[this._nowPlayingIndex].title
+        title: this.songs[this._nowPlayingIndex].title,
       };
     }
 
@@ -139,13 +139,13 @@ class QueueManager {
     this._dispatcher = this.voiceConnection
       .playStream(
         await ytdl(this.songs[this._nowPlayingIndex].url, {
-          highWaterMark: 1 << 25
+          highWaterMark: 1 << 25,
         })
       )
       .on("end", () => {
         this._onSongEnded();
       })
-      .on("error", err => {
+      .on("error", (err) => {
         this._onError(err);
       });
     this._dispatcher.setVolume(this._volume / 100);
@@ -184,11 +184,11 @@ class QueueManager {
 
   shuffle() {
     // https://gist.github.com/guilhermepontes/17ae0cc71fa2b13ea8c20c94c5c35dc4
-    const shuffleArray = arr =>
+    const shuffleArray = (arr) =>
       arr
-        .map(a => [Math.random(), a])
+        .map((a) => [Math.random(), a])
         .sort((a, b) => a[0] - b[0])
-        .map(a => a[1]);
+        .map((a) => a[1]);
 
     // if we're currently playing a song, we reset now playing index to 0
     // move currently playing songs to top of the queue and mix the rest of the songs
@@ -273,9 +273,16 @@ class QueueManager {
       const relatedSongs = await getRelatedYoutubeVideo(
         this._songs[this._nowPlayingIndex - 1].id
       );
-      const nextSongs: Song[] = relatedSongs.map(song => ({
+
+      if (!relatedSongs.length) {
+        this.loop = "queue";
+        this._nowPlayingIndex = 0;
+        return;
+      }
+
+      const nextSongs: Song[] = relatedSongs.map((song) => ({
         ...song,
-        requestedBy: this.botId
+        requestedBy: this.botId,
       }));
       this._songs = this._songs.concat(nextSongs);
     } else {
