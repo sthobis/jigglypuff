@@ -3,7 +3,7 @@ import {
   VoiceChannel,
   VoiceConnection,
   StreamDispatcher,
-  RichEmbed,
+  MessageEmbed,
   Message,
 } from "discord.js";
 import ytdl from "ytdl-core";
@@ -136,12 +136,12 @@ class QueueManager {
     this.showNowPlaying();
 
     this._isPlaying = true;
+    const stream = ytdl(this.songs[this._nowPlayingIndex].url, {
+      filter: "audioonly",
+      highWaterMark: 1 << 25,
+    });
     this._dispatcher = this.voiceConnection
-      .playStream(
-        await ytdl(this.songs[this._nowPlayingIndex].url, {
-          highWaterMark: 1 << 25,
-        })
-      )
+      .play(stream)
       .on("end", () => {
         this._onSongEnded();
       })
@@ -221,7 +221,7 @@ class QueueManager {
     const { title, url, duration, requestedBy } = this._songs[
       this._nowPlayingIndex
     ];
-    const response = new RichEmbed()
+    const response = new MessageEmbed()
       .setColor("#ffffff")
       .setTitle("Now playing")
       .setDescription(
@@ -231,7 +231,7 @@ class QueueManager {
       );
 
     const lastMessageOnChannel = (
-      await this.textChannel.fetchMessages({ limit: 1 })
+      await this.textChannel.messages.fetch({ limit: 1 })
     ).first();
     if (lastMessageOnChannel.id === this._lastNowPlayingMessage?.id) {
       this._lastNowPlayingMessage.edit(response);

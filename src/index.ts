@@ -1,4 +1,4 @@
-import Discord, { Message, TextChannel, RichEmbed } from "discord.js";
+import Discord, { Message, TextChannel, MessageEmbed } from "discord.js";
 import dotenv from "dotenv";
 import unescape from "lodash.unescape";
 import axios from "axios";
@@ -218,7 +218,7 @@ client.on("message", async (message) => {
         const { meninggal, sembuh, perawatan, jumlahKasus } = (
           await axios.get("https://indonesia-covid-19.mathdro.id/api")
         ).data;
-        const response = new RichEmbed()
+        const response = new MessageEmbed()
           .setColor("#ffffff")
           .setTitle("🇮🇩  Corona Tracker").setDescription(`
 Jumlah kasus: ${jumlahKasus}
@@ -238,7 +238,7 @@ Meninggal: ${meninggal}
     case "command":
     case "commands":
     case "help":
-      const response = new RichEmbed()
+      const response = new MessageEmbed()
         .setColor("#ffffff")
         .setTitle("Command list").setDescription(`
 **q**, **queue** : Show queue or add any new song into the queue.
@@ -270,7 +270,7 @@ Meninggal: ${meninggal}
       return;
     default:
       message.channel.send(
-        "You need to enter a valid command! Type !help fore more info.",
+        "You need to enter a valid command! Type !help for more info.",
         { code: "" }
       );
   }
@@ -278,7 +278,7 @@ Meninggal: ${meninggal}
 
 function setPresence() {
   client.user.setPresence({
-    game: {
+    activity: {
       name: `${BotConfig.prefix}help`,
       type: "LISTENING",
     },
@@ -298,7 +298,7 @@ async function handleQueue(
     next?: boolean;
   } = {}
 ) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -409,7 +409,7 @@ ${actualIndex}) ${unescape(song.title)}
 }
 
 async function handleNext(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -428,7 +428,7 @@ async function handleNext(message: Message) {
 }
 
 async function handleDelete(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -448,7 +448,7 @@ async function handleDelete(message: Message) {
 }
 
 async function handleStop(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -467,7 +467,7 @@ async function handleStop(message: Message) {
 }
 
 async function handleResume(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -486,7 +486,7 @@ async function handleResume(message: Message) {
 }
 
 async function handleJump(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -506,7 +506,7 @@ async function handleJump(message: Message) {
 }
 
 async function handleClear(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -525,7 +525,7 @@ async function handleClear(message: Message) {
 }
 
 async function handleShuffle(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -549,7 +549,7 @@ async function handleNowPlaying(message: Message) {
 }
 
 async function handleGetPlaylist(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -611,7 +611,7 @@ async function handleGetPlaylist(message: Message) {
 }
 
 async function handleLoadPlaylist(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -639,7 +639,7 @@ async function handleLoadPlaylist(message: Message) {
 }
 
 async function handleSavePlaylist(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
@@ -666,7 +666,7 @@ async function handleSavePlaylist(message: Message) {
 }
 
 async function handleRemovePlaylist(message: Message) {
-  const voiceChannel = message.member.voiceChannel;
+  const voiceChannel = message.member.voice.channel;
   if (!voiceChannel)
     return message.channel.send(
       "You need to be in a voice channel to use this command!",
