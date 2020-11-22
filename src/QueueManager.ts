@@ -143,7 +143,7 @@ class QueueManager {
       });
       this._dispatcher = this.voiceConnection
         .play(stream)
-        .on("end", () => {
+        .on("finish", () => {
           this._onSongEnded();
         })
         .on("error", (err) => {
