@@ -136,19 +136,24 @@ class QueueManager {
     this.showNowPlaying();
 
     this._isPlaying = true;
-    const stream = ytdl(this.songs[this._nowPlayingIndex].url, {
-      filter: "audioonly",
-      highWaterMark: 1 << 25,
-    });
-    this._dispatcher = this.voiceConnection
-      .play(stream)
-      .on("end", () => {
-        this._onSongEnded();
-      })
-      .on("error", (err) => {
-        this._onError(err);
+    try {
+      const stream = ytdl(this.songs[this._nowPlayingIndex].url, {
+        filter: "audioonly",
+        highWaterMark: 1 << 25,
       });
-    this._dispatcher.setVolume(this._volume / 100);
+      this._dispatcher = this.voiceConnection
+        .play(stream)
+        .on("end", () => {
+          this._onSongEnded();
+        })
+        .on("error", (err) => {
+          this._onError(err);
+        });
+      this._dispatcher.setVolume(this._volume / 100);
+    } catch (err) {
+      console.log(this.songs[this._nowPlayingIndex]);
+      console.log(err);
+    }
   }
 
   stop() {

@@ -7,27 +7,25 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "dev": "nodemon --watch src src/index.ts",
+    "dev": "cross-env NODE_ENV=development nodemon --watch src src/index.ts",
     "start": "tsc && node dist/index.js"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.3.3",
     "@types/axios": "^0.14.0",
     "@types/lowdb": "^1.0.9",
     "axios": "^0.19.2",
     "btoa": "^1.2.1",
-    "cheerio": "^1.0.0-rc.3",
+    "cross-env": "^7.0.2",
     "discord.js": "^12.4.1",
     "dotenv": "^8.2.0",
     "ffmpeg": "0.0.4",
     "lodash.unescape": "^4.0.1",
     "lowdb": "^1.0.0",
-    "node-opus": "^0.3.3",
     "pm2": "^4.2.3",
-    "request": "^2.88.2",
     "simpleyt": "^1.0.6",
     "spotify-web-api-node": "^4.0.0",
     "youtube-search": "^1.1.4",
-    "yt-search": "^1.1.2",
     "ytdl-core": "^4.0.0"
   },
   "devDependencies": {

@@ -3,8 +3,6 @@ import dotenv from "dotenv";
 import unescape from "lodash.unescape";
 import axios from "axios";
 import pm2 from "pm2";
-// For youtube search, we use cheerio(scraper) based library
-// to prevent being limited by api rate limiter
 import { searchYoutube } from "./youtube";
 import { getSpotifyPlaylistTracks } from "./spotify";
 import {
@@ -42,6 +40,10 @@ client.once("reconnecting", () => {
 client.once("disconnect", () => {
   console.log("Disconnect!");
 });
+
+if (process.env.DEBUG) {
+  client.on("debug", console.log);
+}
 
 client.on("message", async (message) => {
   // message sent by the bot itself, ignores it
@@ -347,6 +349,12 @@ async function handleQueue(
   } else {
     // regular youtube search
     const searchResult = await searchYoutube(songQuery);
+    if (!searchResult) {
+      return message.channel.send(
+        `Failed to find song "${songQuery}", try again.`,
+        { code: "" }
+      );
+    }
     const song = { ...searchResult, requestedBy: message.author.id };
     serverQueue.queue(song, index);
   }

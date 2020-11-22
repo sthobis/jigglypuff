@@ -1,13 +1,6 @@
-/**
- * rewritten based on https://github.com/talmobi/yt-search
- */
-
-import cheerio from "cheerio";
-import request from "request";
 import youtubeApi from "youtube-search";
 import simpleYT from "simpleyt";
 import { logError } from "./db";
-import fs from "fs";
 
 interface VideoResult {
   id: string;
@@ -17,22 +10,28 @@ interface VideoResult {
 }
 
 export async function searchYoutube(query: string): Promise<VideoResult> {
-  const videos = await simpleYT(query, {
-    filter: "video",
-  });
+  try {
+    const videos = await simpleYT(query, {
+      filter: "video",
+    });
 
-  if (!videos.length) {
-    return null;
+    if (!videos.length) {
+      return null;
+    }
+
+    const video = videos[0];
+    const duration = String(video.length.sec).replace(".", ":");
+
+    return {
+      id: video.identifier,
+      title: video.title,
+      url: video.uri,
+      duration,
+    };
+  } catch (err) {
+    logError("searchYoutube" + JSON.stringify(err));
+    return undefined;
   }
-
-  const video = videos[0];
-
-  return {
-    id: video.identifier,
-    title: video.title,
-    url: video.uri,
-    duration: video.length.sec,
-  };
 }
 
 /**
@@ -60,6 +59,11 @@ export async function getRelatedYoutubeVideo(
     }));
   } catch (err) {
     // most probaby error.response.status === 403 API QUOTA LIMIT
+    console.log("getRelatedYoutubeVideo", err.response.status);
+    if (err.response.status === 403) {
+      console.log("Hitting youtube API quota limit");
+    }
+
     const videos = await simpleYT(videoId, {
       filter: "video",
     });
