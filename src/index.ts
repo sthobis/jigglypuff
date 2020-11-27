@@ -204,6 +204,8 @@ client.on("message", async (message) => {
           logError(err.message);
         }
 
+        message.react("👌");
+        handleDisconnect(message);
         pm2.restart("jigglypuff", (err: Error) => {
           if (err) {
             message.channel.send(`Failed to restart pm2 process.`, {
