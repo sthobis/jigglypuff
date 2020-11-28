@@ -137,12 +137,13 @@ class QueueManager {
 
     this._isPlaying = true;
     try {
-      const stream = ytdl(
+      const stream = await ytdl(
         this.songs[this._nowPlayingIndex].url ||
           this.songs[this._nowPlayingIndex].id,
         {
-          filter: "audioonly",
-          highWaterMark: 1 << 25,
+          quality: "highestaudio",
+          highWaterMark: 1 << 23,
+          requestOptions: { maxRedirects: 10 },
         }
       );
       this._dispatcher = this.voiceConnection

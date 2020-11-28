@@ -11,6 +11,7 @@
     "start": "tsc && node dist/index.js"
   },
   "dependencies": {
+    "@discordjs/opus": "0.3.2",
     "@types/axios": "^0.14.0",
     "@types/lowdb": "^1.0.9",
     "axios": "^0.19.2",
@@ -22,11 +23,10 @@
     "lodash.unescape": "^4.0.1",
     "lowdb": "^1.0.0",
     "miniget": "^4.1.0",
-    "opusscript": "^0.0.7",
     "pm2": "^4.2.3",
     "spotify-web-api-node": "^4.0.0",
     "youtube-search": "^1.1.4",
-    "ytdl-core": "4.0.3"
+    "ytdl-core": "^4.1.0"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.16",
