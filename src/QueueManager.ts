@@ -8,7 +8,7 @@ import {
 } from "discord.js";
 import ytdl from "ytdl-core";
 import { LoopTypes, Song } from "./types";
-import { searchYoutube, getRelatedYoutubeVideo } from "./youtube";
+import { searchYoutube, getRelatedYoutubeVideo } from "./source/youtube";
 
 class QueueManager {
   textChannel: TextChannel;

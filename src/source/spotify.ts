@@ -1,11 +1,11 @@
 import spotify from "spotify-web-api-node";
 import axios from "axios";
 import btoa from "btoa";
-import { Song } from "./types";
+import { Song } from "../types";
 
 const spotifyApi = new spotify({
   clientId: process.env.SPOTIFY_CLIENT_ID,
-  clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+  clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
 });
 
 async function refreshAccessToken() {
@@ -31,8 +31,8 @@ export async function requestSpotifyAccessToken(
     {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${btoa(clientId + ":" + clientSecret)}`
-      }
+        Authorization: `Basic ${btoa(clientId + ":" + clientSecret)}`,
+      },
     }
   );
   return (await result).data.access_token;
@@ -49,18 +49,18 @@ export async function getSpotifyPlaylistTracks(
       playlistId = playlistId.split("?")[0];
     }
     const response = await spotifyApi.getPlaylistTracks(playlistId, {
-      fields: "items(track(name, artists))"
+      fields: "items(track(name, artists))",
     });
     const tracks = await response.body;
-    return tracks.items.map(item => {
-      const artists = item.track.artists.map(artist => artist.name).join(" ");
+    return tracks.items.map((item) => {
+      const artists = item.track.artists.map((artist) => artist.name).join(" ");
       const title = item.track.name;
       return {
         title: `${artists} - ${title}`,
         id: "",
         url: "",
         duration: "",
-        requestedBy: requestBy
+        requestedBy: requestBy,
       };
     });
   } catch (err) {
