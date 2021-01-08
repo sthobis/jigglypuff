@@ -23,6 +23,10 @@ export async function searchYoutube(query: string): Promise<VideoResult> {
       video = await searchYoutubeByScraping(query);
     }
     return video;
+  } else {
+    console.log("Youtube API limit for today is reached");
+    let video = await searchYoutubeByScraping(query);
+    return video;
   }
 }
 
