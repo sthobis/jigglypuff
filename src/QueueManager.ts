@@ -143,7 +143,12 @@ class QueueManager {
         {
           quality: "highestaudio",
           highWaterMark: 1 << 23,
-          requestOptions: { maxRedirects: 10 },
+          requestOptions: {
+            maxRedirects: 1,
+            headers: {
+              Cookie: process.env.COOKIES,
+            },
+          },
         }
       );
       this._dispatcher = this.voiceConnection
