@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import unescape from "lodash.unescape";
-import { searchYoutube } from "../source/youtube";
+import { searchYoutube, searchYoutubeByOembed } from "../source/youtube";
 import { getSpotifyPlaylistTracks } from "../source/spotify";
 import {
   getPlaylist,
@@ -22,6 +22,14 @@ export default {
   queue: handleQueue,
   qn: (message: Message, serverQueue: QueueManager) =>
     handleQueue(message, serverQueue, { next: true }),
+  qid: (message: Message, serverQueue: QueueManager) =>
+    handleQueue(message, serverQueue, { format: "id" }),
+  qnid: (message: Message, serverQueue: QueueManager) =>
+    handleQueue(message, serverQueue, { format: "id", next: true }),
+  qurl: (message: Message, serverQueue: QueueManager) =>
+    handleQueue(message, serverQueue, { format: "url" }),
+  qnurl: (message: Message, serverQueue: QueueManager) =>
+    handleQueue(message, serverQueue, { format: "url", next: true }),
   n: handleNext,
   next: handleNext,
   d: handleDelete,
@@ -58,6 +66,7 @@ async function handleQueue(
   serverQueue: QueueManager,
   opts: {
     next?: boolean;
+    format?: "id" | "url";
   } = {}
 ) {
   const songQuery = getArgs(message.content);
@@ -72,7 +81,19 @@ async function handleQueue(
   // !queue <query> command
   // add new song(s) into queue
   const index = opts.next ? serverQueue.nowPlayingIndex + 1 : undefined;
-  if (songQuery.startsWith("https://open.spotify.com/playlist/")) {
+  if (opts.format) {
+    // search by youtube id/url
+    const searchOpts = { [opts.format]: songQuery };
+    const searchResult = await searchYoutubeByOembed(searchOpts);
+    if (!searchResult) {
+      return message.channel.send(
+        `Failed to find song "${songQuery}", try using 'q' command.`,
+        { code: "" }
+      );
+    }
+    const song = { ...searchResult, requestedBy: message.author.id };
+    serverQueue.queue(song, index);
+  } else if (songQuery.startsWith("https://open.spotify.com/playlist/")) {
     // spotify playlist
     try {
       const songs = await getSpotifyPlaylistTracks(

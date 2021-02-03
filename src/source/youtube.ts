@@ -1,4 +1,5 @@
 import unescape from "lodash.unescape";
+import axios from "axios";
 import youtubeSearch from "../libs/youtube-search";
 import youtubeScrape, { ScrapedVideo } from "../libs/simpleYT";
 import { logError } from "../db";
@@ -13,6 +14,29 @@ interface VideoResult {
 const getTimestamp = (date) =>
   `${date.getDate()}-${date.getMonth()}-${date.getFullYear()}`;
 let timestamp = getTimestamp(new Date());
+
+export async function searchYoutubeByOembed({
+  id,
+  url,
+}: {
+  id?: string;
+  url?: string;
+}): Promise<VideoResult> {
+  try {
+    const fullUrl = url ? url : `https://www.youtube.com/watch?v=${id}`;
+    const { data } = await axios.get(
+      `https://www.youtube.com/oembed?url=${fullUrl}&format=json`
+    );
+    return {
+      id,
+      title: unescape(data.title),
+      url: fullUrl,
+      duration: "",
+    };
+  } catch (err) {
+    return null;
+  }
+}
 
 export async function searchYoutube(query: string): Promise<VideoResult> {
   if (timestamp === getTimestamp(new Date())) {
@@ -77,6 +101,7 @@ async function searchYoutubeByScraping(query: string): Promise<VideoResult> {
 
     return null;
   } catch (err) {
+    console.log(err);
     logError("searchYoutube" + JSON.stringify(err.message));
     return null;
   }

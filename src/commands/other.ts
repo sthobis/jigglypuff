@@ -24,6 +24,8 @@ function handleHelp(message: Message) {
     .setTitle("Command list").setDescription(`
 **q**, **queue** : Show queue or add any new song into the queue.
 **qn**: Add new song next to current song being played.
+**qid**, **qnid** : Add new song using youtube id.
+**qurl**, **qnurl** : Add new song using youtube url.
 **n**, **next** : Skip current song being played.
 **d**, **delete**: Delete song entry {number} from queue.
 **s**, **stop** : Stop streaming song.

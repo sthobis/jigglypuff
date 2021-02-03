@@ -75,7 +75,15 @@ class QueueManager {
         this._songs.push(song);
       }
       const songIndex = index || this._songs.length - 1;
-      this._sendMessage(`${songIndex}) ${song.title} added to queue`);
+      const url = song.url
+        ? song.url
+        : `https://www.youtube.com/watch?v=${song.id}`;
+      const response = new MessageEmbed()
+        .setColor("#ffffff")
+        .setDescription(
+          `${songIndex}) [${unescape(song.title)}](${url}) added to queue`
+        );
+      this.textChannel.send(response);
     }
     if (!this._isPlaying) {
       this.play();
