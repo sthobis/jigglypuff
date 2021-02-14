@@ -206,7 +206,7 @@ function handleShuffle(message: Message, serverQueue: QueueManager) {
 }
 
 function handleNowPlaying(message: Message, serverQueue: QueueManager) {
-  serverQueue.showNowPlaying();
+  serverQueue.showNowPlaying({ progress: true });
 }
 
 function getPlaylistByPage(savedPlaylist: Playlist[], page: number): string {

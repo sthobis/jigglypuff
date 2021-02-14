@@ -20,3 +20,12 @@ export async function logToFile(
     });
   });
 }
+
+export function getDurationString(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${hours ? hours + ":" : ""}${
+    hours && minutes < 10 ? `0${minutes}` : minutes
+  }:${seconds < 10 ? `0${seconds}` : seconds}`;
+}

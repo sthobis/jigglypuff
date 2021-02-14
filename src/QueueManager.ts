@@ -9,6 +9,7 @@ import {
 import ytdl from "ytdl-core";
 import { LoopTypes, Song } from "./types";
 import { searchYoutube, getRelatedYoutubeVideo } from "./source/youtube";
+import { getDurationString } from "./util";
 
 class QueueManager {
   textChannel: TextChannel;
@@ -141,6 +142,16 @@ class QueueManager {
       };
     }
 
+    if (!this.songs[this._nowPlayingIndex].duration) {
+      const info = await ytdl.getBasicInfo(
+        this.songs[this._nowPlayingIndex].url ||
+          this.songs[this._nowPlayingIndex].id
+      );
+      const videoLength = parseInt(info.videoDetails.lengthSeconds);
+      this.songs[this._nowPlayingIndex].duration = getDurationString(
+        videoLength
+      );
+    }
     this.showNowPlaying();
 
     this._isPlaying = true;
@@ -240,17 +251,24 @@ class QueueManager {
     this.clear();
   }
 
-  async showNowPlaying() {
+  async showNowPlaying(opts: { progress?: boolean } = {}) {
     const { title, url, duration, requestedBy } = this._songs[
       this._nowPlayingIndex
     ];
     const response = new MessageEmbed()
       .setColor("#ffffff")
-      .setTitle("Now playing")
+      .setTitle(`Now playing`)
       .setDescription(
-        `[${unescape(title)}](${url})${
-          duration ? ` - ${duration}` : ""
-        }\nadded by <@${requestedBy}>`
+        `${this._nowPlayingIndex}) [${unescape(
+          title
+        )}](${url}) added by <@${requestedBy}>
+        Duration ${duration}${
+          opts.progress
+            ? ", current " +
+              getDurationString(Math.floor(this._dispatcher.streamTime / 1000))
+            : ""
+        }
+`
       );
 
     const lastMessageOnChannel = (
