@@ -1,5 +1,7 @@
 // modified from https://github.com/kimcore/simpleYT
 import miniget from "miniget";
+import cheerio from "cheerio";
+import { logToFile } from "../util";
 
 export interface ScrapedVideo {
   type: "video";
@@ -28,10 +30,24 @@ export default async function simpleYT(
     "https://www.youtube.com/results?search_query=" + encodeURIComponent(query),
     { ...options, ...{ filter: undefined } }
   ).text();
-  let match = response.match(/window\["ytInitialData"]\s*=\s*(.*?);\s*/);
-  if (!match) match = response.match(/var\s*ytInitialData\s*=\s*(.*?);\s*/);
-  const line = match[0].trim();
-  const json = JSON.parse(line.substring(line.indexOf("{"), line.length - 1));
+  const $ = cheerio.load(response);
+  let initialDataJson;
+  $("script").each(function (i) {
+    const text = $(this).html();
+    if (text.match(/var\s*ytInitialData\s*=\s*/)) {
+      const objString = text
+        .replace(/  +/g, " ")
+        .replace("var ytInitialData = ", "");
+      initialDataJson = objString.substring(0, objString.length - 1);
+      return false;
+    }
+  });
+  if (!initialDataJson) {
+    await logToFile(response);
+    throw new Error("Scrape error, raw html logged for debug");
+  }
+
+  const json = JSON.parse(initialDataJson);
   const result =
     json["contents"]["twoColumnSearchResultsRenderer"]["primaryContents"][
       "sectionListRenderer"

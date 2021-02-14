@@ -16,6 +16,7 @@
     "@types/lowdb": "^1.0.9",
     "axios": "^0.19.2",
     "btoa": "^1.2.1",
+    "cheerio": "^1.0.0-rc.5",
     "cross-env": "^7.0.2",
     "discord.js": "^12.4.1",
     "dotenv": "^8.2.0",

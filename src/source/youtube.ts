@@ -81,7 +81,9 @@ async function searchYoutubeByAPI(query: string): Promise<VideoResult> {
 async function searchYoutubeByScraping(query: string): Promise<VideoResult> {
   try {
     const videos = await youtubeScrape(query, {
-      filter: "video",
+      headers: {
+        Cookie: process.env.COOKIES,
+      },
     });
 
     if (!videos.length) {
@@ -101,7 +103,6 @@ async function searchYoutubeByScraping(query: string): Promise<VideoResult> {
 
     return null;
   } catch (err) {
-    console.log(err);
     logError("searchYoutube" + JSON.stringify(err.message));
     return null;
   }
@@ -138,7 +139,9 @@ export async function getRelatedYoutubeVideo(
     }
 
     const videos = await youtubeScrape(videoId, {
-      filter: "video",
+      headers: {
+        Cookie: process.env.COOKIES,
+      },
     });
 
     if (!videos.length) {
