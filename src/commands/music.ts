@@ -181,6 +181,9 @@ function handleNext(message: Message, serverQueue: QueueManager) {
 
 function handleDelete(message: Message, serverQueue: QueueManager) {
   const deleteQuery = getArgs(message.content);
+  if (!deleteQuery) {
+    return;
+  }
   let startIndex: number, endIndex: number;
   if (deleteQuery.includes("-")) {
     [startIndex, endIndex] = deleteQuery
