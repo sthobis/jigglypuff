@@ -91,27 +91,55 @@ class QueueManager {
     }
   }
 
-  delete(index: number) {
-    // send optimistic message
-    this._sendMessage(`${this._songs[index].title} removed from queue`);
-    if (index === this._nowPlayingIndex) {
-      // Delete songs that currently being played
-      // Remove it from queue and skip to next song
-      if (this._isPlaying) {
-        this.stop();
-        this._songs.splice(index, 1);
-        this.play();
+  delete(startIndex: number, endIndex: number) {
+    if (endIndex) {
+      const deleteCount = endIndex + 1 - startIndex;
+      // send optimistic message
+      this._sendMessage(`${deleteCount} songs removed from queue`);
+      if (
+        this._nowPlayingIndex >= startIndex &&
+        this._nowPlayingIndex <= endIndex
+      ) {
+        // Delete songs that currently being played
+        // Remove it from queue and skip to next song
+        if (this._isPlaying) {
+          this.stop();
+          this._songs.splice(startIndex, deleteCount);
+          this.play();
+        } else {
+          this._songs.splice(startIndex, deleteCount);
+        }
+      } else if (endIndex < this._nowPlayingIndex) {
+        // Delete songs from previous entry
+        // Remove it from queue and reduce current nowplaying index by number of songs deleted
+        this._songs.splice(startIndex, deleteCount);
+        this._nowPlayingIndex = this._nowPlayingIndex - deleteCount;
       } else {
-        this._songs.splice(index, 1);
+        // Delete songs from next entry
+        this._songs.splice(startIndex, deleteCount);
       }
-    } else if (index < this._nowPlayingIndex) {
-      // Delete songs from previous entry
-      // Remove it from queue and reduce current nowplaying index by 1
-      this._songs.splice(index, 1);
-      this._nowPlayingIndex--;
     } else {
-      // Delete songs from next entry
-      this._songs.splice(index, 1);
+      // send optimistic message
+      this._sendMessage(`${this._songs[startIndex].title} removed from queue`);
+      if (startIndex === this._nowPlayingIndex) {
+        // Delete songs that currently being played
+        // Remove it from queue and skip to next song
+        if (this._isPlaying) {
+          this.stop();
+          this._songs.splice(startIndex, 1);
+          this.play();
+        } else {
+          this._songs.splice(startIndex, 1);
+        }
+      } else if (startIndex < this._nowPlayingIndex) {
+        // Delete songs from previous entry
+        // Remove it from queue and reduce current nowplaying index by 1
+        this._songs.splice(startIndex, 1);
+        this._nowPlayingIndex--;
+      } else {
+        // Delete songs from next entry
+        this._songs.splice(startIndex, 1);
+      }
     }
   }
 

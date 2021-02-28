@@ -127,7 +127,7 @@ function getSongListByPage(serverQueue: QueueManager, page: number): string {
       .map((song, index) => {
         const actualIndex = index + startIndex;
         if (actualIndex === serverQueue.nowPlayingIndex) {
-          return `    ⬐ current track
+          return `  ⬐ current track
 ${actualIndex}) ${unescape(song.title)}
   ⬑ current track`;
         } else {
@@ -180,8 +180,16 @@ function handleNext(message: Message, serverQueue: QueueManager) {
 }
 
 function handleDelete(message: Message, serverQueue: QueueManager) {
-  const deleteIndex = parseInt(getArgs(message.content));
-  serverQueue.delete(deleteIndex);
+  const deleteQuery = getArgs(message.content);
+  let startIndex: number, endIndex: number;
+  if (deleteQuery.includes("-")) {
+    [startIndex, endIndex] = deleteQuery
+      .split("-")
+      .map((item) => parseInt(item));
+  } else {
+    startIndex = parseInt(deleteQuery);
+  }
+  serverQueue.delete(startIndex, endIndex);
 }
 
 function handleStop(message: Message, serverQueue: QueueManager) {
