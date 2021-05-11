@@ -188,7 +188,8 @@ function handleDelete(message: Message, serverQueue: QueueManager) {
   if (deleteQuery.includes("-")) {
     [startIndex, endIndex] = deleteQuery
       .split("-")
-      .map((item) => parseInt(item));
+      .map((item) => parseInt(item))
+      .sort();
   } else {
     startIndex = parseInt(deleteQuery);
   }

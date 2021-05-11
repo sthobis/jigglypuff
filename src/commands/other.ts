@@ -8,6 +8,7 @@ import { getArgs } from "../util";
 export default {
   dc: handleDisconnect,
   disconnect: handleDisconnect,
+  h: handleHelp,
   help: handleHelp,
   reboot: handleReboot,
   prefix: handlePrefix,

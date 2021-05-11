@@ -91,7 +91,7 @@ class QueueManager {
     }
   }
 
-  delete(startIndex: number, endIndex: number) {
+  delete(startIndex: number, endIndex?: number) {
     if (endIndex) {
       const deleteCount = endIndex + 1 - startIndex;
       // send optimistic message
@@ -176,9 +176,8 @@ class QueueManager {
           this.songs[this._nowPlayingIndex].id
       );
       const videoLength = parseInt(info.videoDetails.lengthSeconds);
-      this.songs[this._nowPlayingIndex].duration = getDurationString(
-        videoLength
-      );
+      this.songs[this._nowPlayingIndex].duration =
+        getDurationString(videoLength);
     }
     this.showNowPlaying();
 
@@ -205,6 +204,9 @@ class QueueManager {
         })
         .on("error", (err) => {
           this._onError(err);
+          if (this.songs.length > 1) {
+            this._onSongEnded();
+          }
         });
       this._dispatcher.setVolume(this._volume / 100);
     } catch (err) {
@@ -275,14 +277,13 @@ class QueueManager {
   }
 
   disconnect() {
-    this.voiceConnection.disconnect();
     this.clear();
+    this.voiceConnection.disconnect();
   }
 
   async showNowPlaying(opts: { progress?: boolean } = {}) {
-    const { title, url, duration, requestedBy } = this._songs[
-      this._nowPlayingIndex
-    ];
+    const { title, url, duration, requestedBy } =
+      this._songs[this._nowPlayingIndex];
     const response = new MessageEmbed()
       .setColor("#ffffff")
       .setTitle(`Now playing`)
