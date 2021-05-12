@@ -277,8 +277,8 @@ class QueueManager {
   }
 
   disconnect() {
-    this.clear();
     this.voiceConnection.disconnect();
+    this.clear();
   }
 
   async showNowPlaying(opts: { progress?: boolean } = {}) {
