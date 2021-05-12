@@ -2302,9 +2302,9 @@ supports-color@^5.3.0, supports-color@^5.5.0:
     has-flag "^3.0.0"
 
 systeminformation@^4.14.16:
-  version "4.23.3"
-  resolved "https://registry.npmjs.org/systeminformation/-/systeminformation-4.23.3.tgz"
-  integrity sha512-TIGmv7O1vVw00ldkj8ckHJr667l/lbLxvYB5IrJZ7pxzKXt7RmCduvzHbFM6k2Owif/dGd7oEmRkaQJEH9ewng==
+  version "4.34.23"
+  resolved "https://registry.yarnpkg.com/systeminformation/-/systeminformation-4.34.23.tgz#54c54ced5adc49c27cda953b73c0819ed56edd45"
+  integrity sha512-33+lQwlLxXoxy0o9WLOgw8OjbXeS3Jv+pSl+nxKc2AOClBI28HsdRPpH0u9Xa9OVjHLT9vonnOMw1ug7YXI0dA==
 
 tar@^6.0.2:
   version "6.0.5"
