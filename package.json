@@ -27,7 +27,7 @@
     "pm2": "^4.2.3",
     "querystring": "^0.2.0",
     "spotify-web-api-node": "^4.0.0",
-    "ytdl-core": "^4.1.0"
+    "ytdl-core": "^4.8.2"
   },
   "devDependencies": {
     "@types/cheerio": "^0.22.16",

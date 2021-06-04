@@ -190,7 +190,7 @@ class QueueManager {
           quality: "highestaudio",
           highWaterMark: 1 << 23,
           requestOptions: {
-            maxRedirects: 1,
+            maxRedirects: 10,
             headers: {
               Cookie: process.env.COOKIES,
             },
