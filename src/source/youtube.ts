@@ -39,19 +39,8 @@ export async function searchYoutubeByOembed({
 }
 
 export async function searchYoutube(query: string): Promise<VideoResult> {
-  if (timestamp === getTimestamp(new Date())) {
-    let video = await searchYoutubeByAPI(query);
-    if (!video) {
-      console.log("Youtube API limit for today is reached");
-      timestamp = getTimestamp(new Date(Date.now() + 24 * 60 * 60 * 1000));
-      video = await searchYoutubeByScraping(query);
-    }
-    return video;
-  } else {
-    console.log("Youtube API limit for today is reached");
-    let video = await searchYoutubeByScraping(query);
-    return video;
-  }
+  const video = await searchYoutubeByScraping(query);
+  return video;
 }
 
 async function searchYoutubeByAPI(query: string): Promise<VideoResult> {
