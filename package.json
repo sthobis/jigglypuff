@@ -14,13 +14,14 @@
     "@discordjs/opus": "0.3.2",
     "@types/axios": "^0.14.0",
     "@types/lowdb": "^1.0.9",
-    "axios": "^0.19.2",
+    "axios": "^0.26.1",
     "btoa": "^1.2.1",
     "cheerio": "^1.0.0-rc.5",
     "cross-env": "^7.0.2",
     "discord.js": "^12.4.1",
     "dotenv": "^8.2.0",
     "ffmpeg": "0.0.4",
+    "ffmpeg-static": "^4.4.1",
     "lodash.unescape": "^4.0.1",
     "lowdb": "^1.0.0",
     "miniget": "^4.1.0",
@@ -34,7 +35,7 @@
     "@types/node": "^13.7.1",
     "@types/request": "^2.48.4",
     "nodemon": "^2.0.2",
-    "ts-node": "^8.6.2",
+    "ts-node": "^8.10.2",
     "typescript": "^4.1.5"
   }
 }
